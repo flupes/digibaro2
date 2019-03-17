@@ -43,10 +43,10 @@ uint32_t RobustFlashIndexes::RetrieveLastIndex() {
   for (int i = 0; i < 2; i++) {
     first[i] = flash_->readLong(indexes_start_[i]);
   }
-  Serial.print("first[0] = ");
-  Serial.println(first[0], HEX);
-  Serial.print("first[0] = ");
-  Serial.println(first[0], HEX);
+//   Serial.print("first[0] = ");
+//   Serial.println(first[0], HEX);
+//   Serial.print("first[0] = ");
+//   Serial.println(first[0], HEX);
   // Check if memory was correctly initialized
   if (first[0] == 0xFFFFFFFF || first[1] == 0xFFFFFFFF) {
     if (first[0] == first[1]) {
@@ -61,7 +61,6 @@ uint32_t RobustFlashIndexes::RetrieveLastIndex() {
   Serial.println("start searching for last index...");
   // Search for the last index
   uint32_t addr[2] = {indexes_start_[0], indexes_start_[1]};
-  uint32_t last_index = ReadCheckInt24(indexes_start_[0], indexes_start_[1]);
   for (uint32_t i = 0; i < nb_indexes_ - 1; i++) {
     addr[0] += 4;
     addr[1] += 4;
@@ -80,21 +79,11 @@ uint32_t RobustFlashIndexes::RetrieveLastIndex() {
       Serial.print(addr[0]);
       Serial.print(" / ");
       Serial.println(addr[1]);
+      if ( first != second ) {
+          Serial.println("Probable memory corruption: index termination do not match");
+      }
       return i;
     }
-    uint32_t curr_index = ReadCheckInt24(addr[0], addr[1]);
-    if ((curr_index - last_index) > 1) {
-      Serial.print("encounter wrap around index for curr_index = ");
-      Serial.print(curr_index);
-      Serial.print(" / last_index = ");
-      Serial.print(last_index);
-      Serial.print(" at memory ");
-      Serial.print(addr[0]);
-      Serial.print(" / ");
-      Serial.println(addr[1]);
-      return i;
-    }
-    last_index = curr_index;
   }
   return kInvalidInt24;
 }
@@ -144,7 +133,7 @@ uint32_t RobustFlashIndexes::GetCurrentCounter() {
 bool RobustFlashIndexes::InitializeMemory() {
   Serial.println("RobustFlashIndexes::InitializeMemory()");
   uint32_t addr[2] = {indexes_start_[0], indexes_start_[1]};
-  for (int i = 0; i < nb_sectors_; i++) {
+  for (uint32_t i = 0; i < nb_sectors_; i++) {
     if (!flash_->eraseSector(addr[0])) {
       Serial.print("Error erasing sector starting at ");
       Serial.println(addr[0]);
