@@ -19,27 +19,30 @@ void setup() {
     ;
  
   Serial.println("Starting...");
+  PackedBaroSample buffer;
 
-  BaroSample inp(1558569600, 110000, 8191, 10000);
+  BaroSample inp(1558569600, 60000, 8191, 5000);
   inp.Print();
   inp.Inspect();
 
   Serial.println();
-  
-  BaroSample outp(inp.data_);
+  inp.GetRawData(buffer);
+
+  BaroSample outp(buffer);
   outp.Print();
   outp.Inspect();
 
   Serial.println();
   Serial.println();
-  
-  BaroSample inn(1558569600, 110000, -8192, 10000);
+
+  BaroSample inn(1558569600, 125000, -8192, 10000);
   inn.Print();
   inn.Inspect();
 
   Serial.println();
-  
-  BaroSample outn(inn.data_);
+  inn.GetRawData(buffer);
+
+  BaroSample outn(buffer);
   outn.Print();
   outn.Inspect();
 }

@@ -11,7 +11,7 @@ void BaroSample::Print() {
     Serial.print("minutes     = ");
     Serial.println(minutes_);
     Serial.print("pressure    = ");
-    Serial.println(pressure_0_02_hpa_);
+    Serial.println(pressure_pa_off_);
     Serial.print("temperature = ");
     Serial.println(temperature_centi_deg_);
     Serial.print("humidity    = ");
@@ -22,7 +22,7 @@ void BaroSample::Inspect() {
     Serial.print("minutes     = ");
     Serial.println(minutes_, HEX);
     Serial.print("pressure    = ");
-    Serial.println(pressure_0_02_hpa_, HEX);
+    Serial.println(pressure_pa_off_, HEX);
     Serial.print("temperature = ");
     Serial.println(temperature_centi_deg_, HEX);
     Serial.print("humidity    = ");
