@@ -55,15 +55,15 @@ class BaroSample {
 
   bool SetTemperature(int32_t temperature) {
     bool overflow = false;
-    if (temperature < -8190) {
-      temperature = -8190;
+    if (temperature < -8192) {
+      temperature = -8192;
       overflow = true;
     }
-    if (temperature > 8190) {
-      temperature = 8190;
+    if (temperature > 8191) {
+      temperature = 8191;
       overflow = true;
     }
-    temperature_centi_deg_ = (uint16_t)(temperature);
+    temperature_centi_deg_ = (int16_t)(temperature);
     return !overflow;
   }
 
@@ -77,8 +77,12 @@ class BaroSample {
   }
 
   void PackSample() {
-      uint8_t temp_msb = (uint8_t)(temperature_centi_deg_ >> 6);
-      uint8_t temp_lsb = (uint8_t)(temperature_centi_deg_ << 2);
+      uint16_t utemp = temperature_centi_deg_;
+      if ( temperature_centi_deg_ < 0 ) {
+        utemp = ~(temperature_centi_deg_) + 1; 
+      }
+      uint8_t temp_msb = (uint8_t)(utemp >> 6);
+      uint8_t temp_lsb = (uint8_t)(utemp << 2);
       uint8_t humi_msb = (uint8_t)(humidity_deci_percent_ >> 2);
       uint8_t humi_lsb = (uint8_t)(0x0003 & humidity_deci_percent_);
       memcpy(data_, &minutes_, 3);
@@ -96,15 +100,21 @@ class BaroSample {
       uint8_t temp_lsb = data_[7] & 0xFC;
       uint8_t humi_msb = data_[6];
       uint8_t humi_lsb = data_[7] & 0x03;
-      Serial.print("temp_msb = ");
-      Serial.print(temp_msb, HEX);
-      Serial.print(" << 6 ");
-      Serial.println((uint16_t)(temp_msb) << 6, HEX);
-      Serial.print("temp_lsb = ");
-      Serial.print(temp_lsb, HEX);
-      Serial.print(" >> 2 ");
-      Serial.println((uint16_t)(temp_lsb >> 2), HEX);
-      temperature_centi_deg_ = (uint16_t)( ((uint16_t)(temp_msb) << 6) | (uint16_t)(temp_lsb >> 2) );
+      // Serial.print("temp_msb = ");
+      // Serial.print(temp_msb, HEX);
+      // Serial.print(" << 6 ");
+      // Serial.println((uint16_t)(temp_msb) << 6, HEX);
+      // Serial.print("temp_lsb = ");
+      // Serial.print(temp_lsb, HEX);
+      // Serial.print(" >> 2 ");
+      // Serial.println((uint16_t)(temp_lsb >> 2), HEX);
+      uint16_t utemp = ((uint16_t)(temp_msb) << 6) | (uint16_t)(temp_lsb >> 2);
+      if ( utemp < 0x2000 ) {
+        temperature_centi_deg_ = (int16_t)(utemp);
+      }
+      else {
+        temperature_centi_deg_ = (int16_t)(~utemp + 1);
+      }
       humidity_deci_percent_ = ((uint16_t)(humi_msb) << 2) | (uint16_t)(humi_lsb);
       timestamp_ = 60 * (uint32_t)(minutes_) + k2019epoch;
   }
