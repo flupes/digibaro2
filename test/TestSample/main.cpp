@@ -1,23 +1,29 @@
 #include <Arduino.h>
 
+// Because `pio ci` dependency generator is broken: include these two headers
+// without any valid reason but to satisfy the dependency finder
+#include <FastCRC.h>
+#include <SPIMemory.h>
+
 
 // We use a Zero compatible board
 #define Serial SerialUSB
 
+// Here is the only real dependency that should be required!
 #include "baro_sample.h"
 
 // compile with:
-// pio ci .\test\TestSample --board=zeroUSB --lib src --lib lib/FastCRC --project-option="targets=upload" --keep-build-dir
+// pio ci .\test\TestSample --board=zeroUSB --lib src --lib lib/FastCRC --lib
+//   lib/SPIMemory --project-option="targets=upload" --keep-build-dir
 
 // monitor with:
 // pio device monitor --port COM5 --baud 115200
-
 
 void setup() {
   Serial.begin(115200);
   while (!Serial)
     ;
- 
+
   Serial.println("Starting...");
   PackedBaroSample buffer;
 
@@ -45,6 +51,60 @@ void setup() {
   BaroSample outn(buffer);
   outn.Print();
   outn.Inspect();
+  if ( (int32_t)(-8192) != outn.GetTemperature() ) {
+    Serial.println("not happy already!");
+  }
+
+  Serial.println();
+  Serial.println("Some more tests now...");
+  Serial.println();
+
+  uint32_t pressure = 60000;
+  int32_t temperature = -8000;
+  uint32_t humidity = 0;
+  uint32_t timestamp = k2019epoch;
+
+  uint16_t error_count = 0;
+  for (int i = 0; i < 1000; i++) {
+    bool error = false;
+    BaroSample in(timestamp, pressure, temperature, humidity);
+    in.GetRawData(buffer);
+    BaroSample out(buffer);
+    if (timestamp != out.GetTimestamp()) {
+      Serial.println("Timestamp conversions failed!");
+      error = true;
+    }
+    if (pressure != out.GetPressure()) {
+      Serial.println("Pressure conversions failed!");
+      error = true;
+    }
+    if (temperature != out.GetTemperature()) {
+      Serial.println("Temperature conversions failed!");
+      error = true;
+    }
+    if (in.GetHumidity() != out.GetHumidity()) {
+      Serial.println("Humidity conversions failed!");
+      error = true;
+    }
+    if (error) {
+      error_count++;
+      Serial.print("Error for test # ");
+      Serial.println(i);
+      in.Print();
+      in.Inspect();
+      out.Print();
+      out.Inspect();
+      Serial.println();
+      Serial.println();
+    }
+    timestamp += 3600;
+    pressure += 65;
+    temperature += 16;
+    humidity += 1;
+  }
+  Serial.println();
+  Serial.print("Error Count = ");
+  Serial.println(error_count);
 }
 
 void loop() {}
@@ -62,7 +122,7 @@ void loop() {}
   Serial.print(i1, HEX);
   Serial.print(" -> ");
   Serial.println(i1, DEC);
-  
+
   int16_t i2 = 32768;
   Serial.print(i2, HEX);
   Serial.print(" -> ");
@@ -72,7 +132,7 @@ void loop() {}
   Serial.print(i3, HEX);
   Serial.print(" -> ");
   Serial.println(i3, DEC);
-  
+
   int16_t i4 = -32768;
   Serial.print(i4, HEX);
   Serial.print(" -> ");
@@ -84,28 +144,28 @@ void loop() {}
   Serial.print(u0, HEX);
   Serial.print(" -> ");
   Serial.println(u0, DEC);
- 
+
   uint16_t u1 = (uint16_t)(i1);
   Serial.print(u1, HEX);
   Serial.print(" -> ");
   Serial.println(u1, DEC);
- 
+
   uint16_t u3 = (uint16_t)(i3);
   Serial.print(u3, HEX);
   Serial.print(" -> ");
   Serial.println(u3, DEC);
- 
+
   uint16_t u4 = (uint16_t)(i4);
   Serial.print(u4, HEX);
   Serial.print(" -> ");
   Serial.println(u4, DEC);
- 
+
   Serial.println("back to int16");
   int16_t b1 = (int16_t)(u1);
   Serial.print(b1, HEX);
   Serial.print(" -> ");
   Serial.println(b1, DEC);
-  
+
   int16_t b4 = (int16_t)(u4);
   Serial.print(b4, HEX);
   Serial.print(" -> ");
