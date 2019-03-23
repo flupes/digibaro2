@@ -8,3 +8,6 @@
 	path = lib/BMP280_driver
 	url = https://github.com/flupes/BMP280_driver.git
 
+[submodule "lib/BME280_driver"]
+	path = lib/BME280_driver
+	url = https://github.com/flupes/BME280_driver.git
