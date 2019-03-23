@@ -1,0 +1,10 @@
+[submodule "FastCRC"]
+	path = lib/FastCRC
+	url = https://github.com/flupes/FastCRC.git
+[submodule "SPIMemory"]
+	path = lib/SPIMemory
+	url = https://github.com/flupes/SPIMemory.git
+[submodule "BMP280_driver"]
+	path = lib/BMP280_driver
+	url = https://github.com/flupes/BMP280_driver.git
+
