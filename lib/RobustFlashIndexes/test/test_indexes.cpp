@@ -8,9 +8,7 @@
 #include <SPIFlash.h>
 
 // compile with:
-// pio ci .\test\IncrementIndexes --board=zeroUSB --lib src --lib lib/SPIMemory
-// --lib lib/FastCRC --project-option="targets=upload" --keep-build-dir
-
+// pio ci .\test --board=zeroUSB -l src -l ..\FastCRC -l ..\SPIMemory -O "targets=upload"
 // monitor with:
 // pio device monitor --port COM5 --baud 115200
 
@@ -63,7 +61,10 @@ void setup() {
     Serial.println(indices.GetCurrentIndex());
     Serial.print("Current Counter = ");
     Serial.println(indices.GetCurrentCounter());
+
+    Serial.println("Done with this test.");
+    while (1);
   }
 }
 
-void loop() { delay(100); }
+void loop() {  }
