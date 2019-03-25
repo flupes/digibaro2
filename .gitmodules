@@ -4,10 +4,6 @@
 [submodule "SPIMemory"]
 	path = lib/SPIMemory
 	url = https://github.com/flupes/SPIMemory.git
-[submodule "BMP280_driver"]
-	path = lib/BMP280_driver
-	url = https://github.com/flupes/BMP280_driver.git
-
 [submodule "lib/BME280_driver"]
 	path = lib/BME280_driver
 	url = https://github.com/flupes/BME280_driver.git
