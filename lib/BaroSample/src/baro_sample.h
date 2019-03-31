@@ -64,7 +64,7 @@ class BaroSample {
     @param temperature  compensated temperature in hundreth of degrees
     @param humidity     relative humidity in hundreth of percent
   */
-  BaroSample(uint32_t seconds, uint32_t pressure, uint32_t temperature,
+  BaroSample(uint32_t seconds, uint32_t pressure, int32_t temperature,
              uint32_t humidity, int8_t tz = 0, uint8_t extra = 0)
       : timezone_(tz), reserved_(extra) {
     SetTimeStamp(seconds);
@@ -150,6 +150,8 @@ class BaroSample {
 
   uint32_t GetTimestamp() { return timestamp_; }
 
+  uint32_t GetTimecount() { return hour_twelfth_; }
+  
   bool SetPressure(uint32_t pressure) {
     if (pressure > 125500) {
       pressure_pa_off_ = UINT16_MAX;
