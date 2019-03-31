@@ -35,13 +35,12 @@ class Int24Crc8 {
 class RobustFlashIndexes {
  public:
   /**
-*sector_start : first sector for the indexes, counted in sector (not bytes)
-*total_sectors: number of sectors to reserve for the indexes
-*Since two copies of the indexes are stored, only half of the total_sector
-*is
-*actually useful information. An even number is required (otherwise the even
-*nubmer below the one given is used)
-*/
+   * sector_start : first sector for the indexes, counted in sector (not bytes)
+   * total_sectors: number of sectors to reserve for the indexes Since two copies 
+   * of the indexes are stored, only half of the total_sector is actually useful 
+   * information. An even number is required (otherwise the evennumber below the 
+   * one given is used)
+  */
   RobustFlashIndexes(uint32_t sector_start, uint32_t total_sectors);
 
   void begin(SPIFlash *flash);
