@@ -8,8 +8,8 @@
 void BaroSample::Print() {
     Serial.print("timestamp   = ");
     Serial.println(timestamp_);
-    Serial.print("minutes     = ");
-    Serial.println(minutes_);
+    Serial.print("hourtwelfth = ");
+    Serial.println(hour_twelfth_);
     Serial.print("pressure    = ");
     Serial.println(pressure_pa_off_);
     Serial.print("temperature = ");
@@ -18,9 +18,9 @@ void BaroSample::Print() {
     Serial.println(humidity_deci_percent_);
 }
 
-void BaroSample::Inspect() {
-    Serial.print("minutes     = ");
-    Serial.println(minutes_, HEX);
+void BaroSample::Inspect(char *data) {
+    Serial.print("hourtwelfth = ");
+    Serial.println(hour_twelfth_, HEX);
     Serial.print("pressure    = ");
     Serial.println(pressure_pa_off_, HEX);
     Serial.print("temperature = ");
@@ -29,7 +29,7 @@ void BaroSample::Inspect() {
     Serial.println(humidity_deci_percent_, HEX);
     Serial.print("  -->  data = ");
     for (uint8_t i=0; i<kBaroSampleSize; i++) {
-        Serial.print(data_[i], HEX);
+        Serial.print(data[i], HEX);
         Serial.print(" ");
     }
     Serial.println();
