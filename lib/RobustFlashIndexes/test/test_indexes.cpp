@@ -8,7 +8,8 @@
 #include <SPIFlash.h>
 
 // compile with:
-// pio ci .\test --board=zeroUSB -l src -l ..\FastCRC -l ..\SPIMemory -O "targets=upload"
+// pio ci .\test --board=zeroUSB -l src -l ..\FastCRC -l ..\SPIMemory -O
+// "targets=upload"
 // monitor with:
 // pio device monitor --port COM5 --baud 115200
 
@@ -16,7 +17,42 @@
 
 SPIFlash flash(4);
 
-RobustFlashIndexes indices(1, 4);
+// Just a derived class to allow access to RetrieveLastIndex...
+class FlashIndices : public RobustFlashIndexes {
+ public:
+  FlashIndices() : RobustFlashIndexes(2, 4) {}
+
+  uint32_t LastIndexOutsideBegin() { return RetrieveLastIndex(); }
+
+  void PrintStatus() {
+    Serial.print("Current Index = ");
+    Serial.println(GetCurrentIndex());
+    Serial.print("Current Counter = ");
+    Serial.println(GetCurrentCounter());
+  }
+
+  void PrintLast() {
+    uint32_t last = RetrieveLastIndex();
+    Serial.print("Last Index Retrieved = ");
+    Serial.println(last);
+  }
+
+  void IncrementAndPrint(uint32_t increment, bool steps = false) {
+    Serial.print("Incrementing ");
+    Serial.print(increment);
+    Serial.println("x...");
+    for (uint32_t i = 0; i < increment; i++) {
+      uint32_t counter = Increment();
+      if (steps) {
+        Serial.print("new counter = ");
+        Serial.println(counter);
+      }
+    }
+    PrintStatus();
+  }
+};
+
+FlashIndices indices;
 
 void setup() {
   Serial.begin(115200);
@@ -32,39 +68,19 @@ void setup() {
   Serial.println("Starting indices...");
   indices.begin(&flash);
 
-  for (int x = 0; x < 2; x++) {
-    Serial.print("Current Index = ");
-    Serial.println(indices.GetCurrentIndex());
+  indices.PrintStatus();
 
-    Serial.println("Incrementing 6x ...");
-    for (int i = 0; i < 6; i++) {
-      uint32_t counter = indices.Increment();
-      Serial.print("new counter = ");
-      Serial.println(counter);
-    }
+  indices.IncrementAndPrint(4, true);
 
-    Serial.println("Incrementing 2040x ...");
-    for (int i = 0; i < 2040; i++) {
-      indices.Increment();
-    }
-    Serial.print("Current Index = ");
-    Serial.println(indices.GetCurrentIndex());
+  indices.IncrementAndPrint(2040);
+  indices.PrintLast();
 
-    Serial.println("Incrementing 6x ...");
-    for (int i = 0; i < 6; i++) {
-      uint32_t counter = indices.Increment();
-      Serial.print("new counter = ");
-      Serial.println(counter);
-    }
+  indices.IncrementAndPrint(1027);
+  indices.PrintLast();
 
-    Serial.print("Current Index = ");
-    Serial.println(indices.GetCurrentIndex());
-    Serial.print("Current Counter = ");
-    Serial.println(indices.GetCurrentCounter());
-
-    Serial.println("Done with this test.");
-    while (1);
-  }
+  Serial.println("Done with this test.");
+  while (1)
+    ;
 }
 
-void loop() {  }
+void loop() {}

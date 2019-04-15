@@ -51,20 +51,23 @@ class RobustFlashIndexes {
 
   uint32_t GetCurrentCounter();
 
- private:
-  bool InitializeMemory();
+protected:
+ uint32_t RetrieveLastIndex();
 
-  uint32_t RetrieveLastIndex();
+private:
+ bool InitializeMemory();
 
-  uint32_t ReadCheckInt24(uint32_t addr1, uint32_t addr2);
+ uint32_t ReadCheckInt24(uint32_t addr1, uint32_t addr2);
 
-  bool DoubleWriteInt24(uint32_t value, uint32_t addr1, uint32_t addr2);
+ bool DoubleWriteInt24(uint32_t value, uint32_t addr1, uint32_t addr2);
 
-  uint32_t sector_start_;
-  uint32_t nb_sectors_;
-  uint32_t nb_indexes_;
-  uint32_t current_index_;
-  uint32_t current_counter_;
-  uint32_t indexes_start_[2];
-  SPIFlash *flash_;
+ uint32_t GetCounter(uint32_t index);
+
+ uint32_t sector_start_;
+ uint32_t nb_sectors_;
+ uint32_t nb_indexes_;
+ uint32_t current_index_;
+ uint32_t current_counter_;
+ uint32_t indexes_start_[2];
+ SPIFlash *flash_;
 };

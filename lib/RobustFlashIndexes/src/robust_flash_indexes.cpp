@@ -37,8 +37,26 @@ void RobustFlashIndexes::begin(SPIFlash *flash) {
   Serial.println("---- END ---- RobustFlashIndexes::begin()");
 }
 
+uint32_t RobustFlashIndexes::GetCounter(uint32_t index) {
+  uint32_t first =
+      ReadCheckInt24(indexes_start_[0] + index, indexes_start_[1] + index);
+  uint32_t second =
+      ReadCheckInt24(indexes_start_[1] + index, indexes_start_[1] + index);
+
+  if (first != second) {
+    if (first != kInvalidInt24) {
+      return first;
+    }
+    if ( second != kInvalidInt24) {
+      return second;
+    }
+  }
+  return first;
+}
+
 uint32_t RobustFlashIndexes::RetrieveLastIndex() {
-  uint32_t first[2];
+  uint32_t first[2] = {0, 0};
+
   Serial.println("RobustFlashIndexes::RetrieveLastIndex()");
   for (int i = 0; i < 2; i++) {
     first[i] = flash_->readLong(indexes_start_[i]);
@@ -57,6 +75,8 @@ uint32_t RobustFlashIndexes::RetrieveLastIndex() {
     InitializeMemory();
     return 0;
   }
+
+  uint32_t last_counter = GetCounter(0);
 
   Serial.println("start searching for last index...");
   // Search for the last index
@@ -84,7 +104,18 @@ uint32_t RobustFlashIndexes::RetrieveLastIndex() {
       }
       return i;
     }
+    uint32_t counter = GetCounter(i+1);
+    if (counter > last_counter) {
+      Serial.print("Older counter encountered for index = ");
+      Serial.print(i+1);
+      Serial.print(" at memory ");
+      Serial.print(addr[0]);
+      Serial.print(" / ");
+      Serial.println(addr[1]);
+      return i;
+    }
   }
+  Serial.println("Last Index Not Found!");
   return kInvalidInt24;
 }
 
