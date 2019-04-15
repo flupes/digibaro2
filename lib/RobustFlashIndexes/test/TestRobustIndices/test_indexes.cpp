@@ -8,14 +8,14 @@
 #include <SPIFlash.h>
 
 // compile with:
-// pio ci .\test --board=zeroUSB -l src -l ..\FastCRC -l ..\SPIMemory -O
-// "targets=upload"
+// pio ci .\test\TestRobustIndices --board=zeroUSB -l src -l ..\FastCRC -l ..\SPIMemory -O "targets=upload"
+
 // monitor with:
 // pio device monitor --port COM5 --baud 115200
 
 #include "robust_flash_indexes.h"
 
-SPIFlash flash(4);
+                                     SPIFlash flash(4);
 
 // Just a derived class to allow access to RetrieveLastIndex...
 class FlashIndices : public RobustFlashIndexes {
