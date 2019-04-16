@@ -2,6 +2,7 @@
 
 const uint32_t kInvalidInt24 = 0x00FFFFFE;
 const uint32_t kSectorLength = 4096;
+const uint32_t kRobustIndexSize = sizeof(uint32_t);
 
 class SPIFlash;
 
@@ -51,6 +52,16 @@ class RobustFlashIndexes {
 
   uint32_t GetCurrentCounter();
 
+  uint32_t GetCounterAt(uint32_t index);
+  
+  uint32_t TotalNumberOfIndexes() {
+    return nb_indexes_;
+  }
+
+  uint32_t NumberOfUsableIndexes() {
+    return nb_indexes_ - kSectorLength / kRobustIndexSize;
+  }
+
 protected:
  uint32_t RetrieveLastIndex();
 
@@ -60,8 +71,6 @@ private:
  uint32_t ReadCheckInt24(uint32_t addr1, uint32_t addr2);
 
  bool DoubleWriteInt24(uint32_t value, uint32_t addr1, uint32_t addr2);
-
- uint32_t GetCounter(uint32_t index);
 
  uint32_t sector_start_;
  uint32_t nb_sectors_;
