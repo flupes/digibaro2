@@ -19,7 +19,8 @@ constexpr uint32_t kRingSamplesSectorLength = 12;  // 3072*16[sample_size] / 409
 
 constexpr uint32_t kPermanentSamplesSectorStart =
     kRingSamplesSectorStart + kRingSamplesSectorLength;
-constexpr uint32_t kPermanentSamplesSectorLength = 490;
+// constexpr uint32_t kPermanentSamplesSectorLength = 490;
+constexpr uint32_t kPermanentSamplesSectorLength = 16;
 
 constexpr uint8_t kMiniUltraProOnBoardChipSelectPin = 4;
 
