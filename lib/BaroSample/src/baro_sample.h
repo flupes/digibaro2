@@ -50,6 +50,8 @@
 
 const uint8_t kBaroSampleSize = 8;
 const uint32_t kPressureOffsetPa = 60000;
+const uint32_t kSecondsResolution = 60;
+// TODO: change to 300 for final program!
 const uint32_t k2019epoch = 1546300800;
 // epoch is divisible by 500 (5 minutes)
 
@@ -134,7 +136,7 @@ class BaroSample {
       temperature_centi_deg_ = (int16_t)(0xC000 | utemp);
     }
     humidity_deci_percent_ = ((uint16_t)(humi_msb) << 2) | (uint16_t)(humi_lsb);
-    timestamp_ = 300 * (uint32_t)(hour_twelfth_) + k2019epoch;
+    timestamp_ = kSecondsResolution * (uint32_t)(hour_twelfth_) + k2019epoch;
   }
 
   bool SetTimeStamp(uint32_t seconds) {
@@ -143,7 +145,7 @@ class BaroSample {
       hour_twelfth_ = 0;
       return false;
     }
-    hour_twelfth_ = (seconds - k2019epoch) / 300;
+    hour_twelfth_ = (seconds - k2019epoch) / kSecondsResolution;
     hour_twelfth_ &= 0x3FFFFF;  // forget bits of rank larger than 22!
     return true;
   }
