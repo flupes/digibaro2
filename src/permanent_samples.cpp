@@ -73,9 +73,9 @@ BaroSample PermanentSamples::GetSampleAtAddr(uint32_t addr) {
 }
 
 BaroSample PermanentSamples::GetSampleWithIndex(uint32_t index) {
-  if (index <= max_samples_) {
+  if (index < max_samples_) {
     uint32_t addr =
-        kPermanentSamplesAddrStart + (index - 1) * kPermanentSampleBytesLength;
+        kPermanentSamplesAddrStart + index * kPermanentSampleBytesLength;
     return GetSampleAtAddr(addr);
   }
   // Index out of range --> return invalid sample
