@@ -1,27 +1,23 @@
 // compile with:
-// pio ci .\test\CollectBaroSamples --board=zeroUSB --lib lib\BME280_driver
-// --lib lib\RTClib --lib lib\BaroSample --lib lib\SPIMemory -O "targets=upload"
-// --keep-build-dir
+// pio ci .\test\CollectBaroSamples --board=zeroUSB
+// -l lib\BME280_driver -l lib\RTClib -l lib\BaroSample -l lib\SPIMemory -l src
+// -O "targets=upload" --keep-build-dir
 
 // monitor with:
 // pio device monitor --port COM5 --baud 115200
 
-
-#include <Arduino.h>
-
-#if defined(ARDUINO_SAMD_ZERO) && defined(SERIAL_PORT_USBVIRTUAL)
-#define Serial SERIAL_PORT_USBVIRTUAL
-#endif
+#include "print_utils.h"
 
 #include "RTClib.h"
 #include "SPIMemory.h"
 #include "baro_sample.h"
 #include "bme280_sensor.h"
+#include "permanent_samples.h"
 
 // Global variables:
 
 // On board SPI Flash Memory
-SPIFlash flash(4);
+SPIFlash flash(kMiniUltraProOnBoardChipSelectPin);
 
 // Real Time Clock
 RTC_DS3231 rtc;
@@ -29,41 +25,10 @@ RTC_DS3231 rtc;
 // BME 280 Pressure/Temperature/Humidity sensor
 Bme280Sensor bme(BME280_I2C_ADDR_SEC);
 
-// address of the next addr where to write sample on flash memory
-uint32_t next_sample_addr = 0;
+// Utility to write samples to flash
+PermanentSamples samples(flash);
 
-const uint32_t kSampleStart = 16 * KB(4);
 const int8_t kTimeZone = -8;
-
-#define PRINT(x) if (Serial) Serial.print(x);
-
-#define PRINTLN(x) if (Serial) Serial.println(x);
-
-
-uint32_t locate_last_sample() {
-  uint32_t addr = kSampleStart;
-  uint32_t word = flash.readLong(addr);
-  if ( word == 0xFFFFFFFF ) {
-    PRINTLN("Memory at start address is ready for write --> start fresh");
-    return addr;
-  }
-
-  for (uint16_t i=1; i<32767; i++) {
-    addr += 8;
-    word = flash.readLong(addr);
-    if ( word == 0xFFFFFFFF) {
-      if (Serial) {
-        Serial.print("Last sample found at addr = ");
-        Serial.print(addr);
-        Serial.print(" --> index = ");
-        Serial.println(i);
-      }
-      return addr;
-    }
-
-  }
-  return 0;
-}
 
 void setup() {
   Serial.begin(115200);
@@ -80,13 +45,17 @@ void setup() {
     while (1);
   }
 
-  next_sample_addr = locate_last_sample();
-
   if (!bme.Begin()) {
     PRINTLN("Sensor initialization error!");
     while (1)
       ;
   }
+
+  uint32_t addr = samples.begin();
+  PRINT("Last sample addr = ");
+  PRINT(addr);
+  PRINT(" --> number of existing samples = ");
+  PRINTLN(samples.GetNumberOfSamples());
 }
 
 void collect_sample(DateTime &dt) {
@@ -95,11 +64,7 @@ void collect_sample(DateTime &dt) {
   BaroSample sample(dt.unixtime(), bme.GetPressure() / 100,
                     bme.GetTemperature(), bme.GetHumidity() / 10);
 
-  PackedBaroSample data;
-  sample.PackSample(data);
-
-  flash.writeCharArray(next_sample_addr, data, kBaroSampleSize);
-  next_sample_addr += 8;
+  samples.AddSample(sample);
 
   if (Serial) {
     char buffer[64];
@@ -124,9 +89,9 @@ void collect_sample(DateTime &dt) {
     Serial.print(sample.HumidityPercent());
     Serial.println();
     Serial.print("Sample written at addr = ");
-    Serial.print(next_sample_addr-8);
+    Serial.print(samples.GetLastSampleAddr());
     Serial.print(" --> sample # ");
-    Serial.println((next_sample_addr-kSampleStart)/8);
+    Serial.println(samples.GetNumberOfSamples());
   }
 }
 
