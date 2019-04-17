@@ -42,7 +42,8 @@ void setup() {
 
   if (!flash.begin()) {
     PRINTLN("Flash memory initialization error!");
-    while (1);
+    while (1)
+      ;
   }
 
   if (!bme.Begin()) {
@@ -51,11 +52,14 @@ void setup() {
       ;
   }
 
-  uint32_t addr = samples.begin();
-  PRINT("Last sample addr = ");
-  PRINT(addr);
-  PRINT(" --> number of existing samples = ");
-  PRINTLN(samples.GetNumberOfSamples());
+
+  PRINT("Start address of permanent sample = ");
+  PRINTLN(samples.GetFirstSampleAddr());
+  PRINT("Max number of samples = ");
+  PRINTLN(samples.GetMaxNumberOfSamples());
+  uint32_t index = samples.begin();
+  PRINT("Last retrieved sample index = ");
+  PRINTLN(index);
 }
 
 void collect_sample(DateTime &dt) {
@@ -63,8 +67,6 @@ void collect_sample(DateTime &dt) {
 
   BaroSample sample(dt.unixtime(), bme.GetPressure() / 100,
                     bme.GetTemperature(), bme.GetHumidity() / 10);
-
-  samples.AddSample(sample);
 
   if (Serial) {
     char buffer[64];
@@ -88,10 +90,13 @@ void collect_sample(DateTime &dt) {
     Serial.print(" | humi = ");
     Serial.print(sample.HumidityPercent());
     Serial.println();
-    Serial.print("Sample written at addr = ");
-    Serial.print(samples.GetLastSampleAddr());
-    Serial.print(" --> sample # ");
-    Serial.println(samples.GetNumberOfSamples());
+  }
+  uint32_t count = samples.AddSample(sample);
+  if (Serial) {
+    Serial.print("Sample #  ");
+    Serial.print(count);
+    Serial.print(" written at addr = ");
+    Serial.println(samples.GetLastSampleAddr());
   }
 }
 

@@ -2,40 +2,61 @@
 
 #include "print_utils.h"
 
-PermanentSamples::PermanentSamples(SPIFlash& flash)
-    : flash_(flash), empty_(false), full_(false) {}
+PermanentSamples::PermanentSamples(SPIFlash& flash) : flash_(flash) {
+  max_samples_ =
+      kPermanentSamplesSectorLength * KB(4) / kPermanentSampleBytesLength;
+}
 
 uint32_t PermanentSamples::begin() {
-  current_sample_addr_ = LocateLastSample();
-  if (current_sample_addr_ == 0xFFFFFFFF) {
-    PRINTLN("PermanentSamples storage space is full!");
-    full_ = true;
+  uint32_t addr = kPermanentSamplesAddrStart;
+  bool reached_unitialized = false;
+  for (number_of_samples_ = 0; number_of_samples_ < max_samples_;
+       number_of_samples_++) {
+    uint32_t word = flash_.readLong(addr);
+    if (word == 0xFFFFFFFF) {
+      reached_unitialized = true;
+      PRINT("Uninitialized memory found at addr = ");
+      PRINT(addr);
+      PRINT(" --> index = ");
+      PRINTLN(number_of_samples_);
+      break;
+    }
+    addr += kPermanentSampleBytesLength;
   }
-  if (current_sample_addr_ == kPermanentSamplesAddrStart) {
-    PRINTLN("No samples yet in flash...");
-    empty_ = true;
+  if (!reached_unitialized) {
+    PRINTLN("Storage is already full!");
+    number_of_samples_ = max_samples_;
   }
-  else {
-    current_sample_addr_ -= kPermanentSampleBytesLength;
+  if (number_of_samples_ == 0) {
+    PRINTLN("No samples on storage yet.");
   }
-  return current_sample_addr_;
+  return number_of_samples_;
 }
 
 uint32_t PermanentSamples::AddSample(BaroSample& sample) {
   PackedBaroSample data;
   sample.PackSample(data);
-  if (!empty_ && !full_) {
-    current_sample_addr_ += kPermanentSampleBytesLength;
-    if (current_sample_addr_ > kPermanentSamplesAddrStart +
-                                   kPermanentSamplesSectorLength * KB(4) - 1) {
-      full_ = true;
+  uint32_t addr = number_of_samples_ * kPermanentSampleBytesLength +
+                  kPermanentSamplesAddrStart;
+  if (number_of_samples_ < max_samples_) {
+    bool ret = flash_.writeCharArray(addr, data, kBaroSampleSize);
+    if (ret) {
+      number_of_samples_++;
+      PRINT("Wrote successfuly sample # ");
+      PRINT(number_of_samples_);
+      PRINT(" at address ");
+      PRINTLN(addr);
+    } else {
+      PRINT("Cannot write sample # ");
+      PRINT(number_of_samples_);
+      PRINT(" at address ");
+      PRINTLN(addr);
     }
   }
-  if (!full_) {
-    flash_.writeCharArray(current_sample_addr_, data, kBaroSampleSize);
-    empty_ = false;
+  else {
+    PRINTLN("Storage already full: cannot add a new sample!");
   }
-  return current_sample_addr_;
+  return number_of_samples_;
 }
 
 BaroSample PermanentSamples::GetSampleAtAddr(uint32_t addr) {
@@ -52,34 +73,29 @@ BaroSample PermanentSamples::GetSampleAtAddr(uint32_t addr) {
 }
 
 BaroSample PermanentSamples::GetSampleWithIndex(uint32_t index) {
-  uint32_t addr =
-      kPermanentSamplesAddrStart + index * kPermanentSampleBytesLength;
-  return GetSampleAtAddr(addr);
+  if (index <= max_samples_) {
+    uint32_t addr =
+        kPermanentSamplesAddrStart + (index - 1) * kPermanentSampleBytesLength;
+    return GetSampleAtAddr(addr);
+  }
+  // Index out of range --> return invalid sample
+  return BaroSample(k2019epoch, 0, 0, 0);
 }
 
-uint32_t PermanentSamples::GetNumberOfSamples() {
-  if (empty_) return 0;
-  return (current_sample_addr_ - kPermanentSamplesAddrStart) /
-             kPermanentSampleBytesLength +
-         1;
+uint32_t PermanentSamples::GetCurrentNumberOfSamples() {
+  return number_of_samples_;
 }
 
-uint32_t PermanentSamples::GetLastSampleAddr() { return current_sample_addr_; }
+uint32_t PermanentSamples::GetMaxNumberOfSamples() { return max_samples_; }
 
-uint32_t PermanentSamples::LocateLastSample() {
-  uint32_t addr = kPermanentSamplesAddrStart;
-  for (uint16_t i = 0;
-       i < kPermanentSamplesSectorLength * KB(4) / kPermanentSampleBytesLength;
-       i++) {
-    uint32_t word = flash_.readLong(addr);
-    if (word == 0xFFFFFFFF) {
-      PRINT("Uninitialized memory found at addr = ");
-      PRINT(addr);
-      PRINT(" --> index = ");
-      PRINTLN(i);
-      return addr;
-    }
-    addr += kPermanentSampleBytesLength;
+uint32_t PermanentSamples::GetFirstSampleAddr() {
+  return kPermanentSamplesAddrStart;
+}
+
+uint32_t PermanentSamples::GetLastSampleAddr() {
+  if (number_of_samples_ > 0) {
+    return kPermanentSamplesAddrStart +
+           kPermanentSampleBytesLength * (number_of_samples_ - 1);
   }
   return 0xFFFFFFFF;
 }
