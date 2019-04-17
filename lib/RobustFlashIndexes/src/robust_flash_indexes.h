@@ -1,3 +1,6 @@
+#ifndef DIGIBARO_ROBUST_FLASH_INDEXES_H
+#define DIGIBARO_ROBUST_FLASH_INDEXES_H
+
 #include <FastCRC.h>
 
 const uint32_t kInvalidInt24 = 0x00FFFFFE;
@@ -80,3 +83,5 @@ private:
  uint32_t indexes_start_[2];
  SPIFlash *flash_;
 };
+
+#endif
