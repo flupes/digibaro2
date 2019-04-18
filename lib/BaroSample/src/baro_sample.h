@@ -75,93 +75,35 @@ class BaroSample {
     SetHumidity(humidity);
   }
 
-  void PackSample(char *data) {
-    uint16_t utemp = 0;
-    if (temperature_centi_deg_ < 0) {
-      utemp = 0x3FFF & (uint16_t)(16384 + temperature_centi_deg_);
-      // utemp = ~(temperature_centi_deg_) + 1;
-      // Serial.print("utemp = ");
-      // Serial.println(utemp, HEX);
-    } else {
-      utemp = temperature_centi_deg_;
-    }
-    uint8_t temp_msb = (uint8_t)(utemp >> 6);
-    uint8_t temp_lsb = (uint8_t)(utemp << 2);
-    uint8_t humi_msb = (uint8_t)(humidity_deci_percent_ >> 2);
-    uint8_t humi_lsb = (uint8_t)(0x0003 & humidity_deci_percent_);
-    uint32_t shifted_ts = hour_twelfth_ << 2;
-    memcpy(data, &shifted_ts, 3);
-    // Serial.print("PACKING: hour_twelfth = ");
-    // Serial.print(hour_twelfth_, HEX);
-    // Serial.print(" --> shifted_ts = ");
-    // Serial.println(shifted_ts, HEX);
-    memcpy(data + 3, &pressure_pa_off_, 2);
-    data[5] = temp_msb;
-    data[6] = humi_msb;
-    data[7] = temp_lsb | humi_lsb;
-  }
+  /*
+    Serialiaze a baro sample as is (16 bytes)
+  */
+  void SerializeSample(char *data);
 
   /*
-    Construct a sample from an encoded packed sample.
-    @param data       pointer to the raw data to process
+    Pack a baro sample on 8 bytes only
   */
-  BaroSample(char *data) {
-    uint32_t shifted_ts = 0;
-    memcpy(&shifted_ts, data, 3);
-    hour_twelfth_ = shifted_ts >> 2;
-    // Serial.print("UNPACKING: shifted_ts = ");
-    // Serial.print(shifted_ts, HEX);
-    // Serial.print(" --> hour_twelfth = ");
-    // Serial.println(hour_twelfth_, HEX);
-    // hour_twelfth_ &= 0x3FFFFF; // should not be necessary...
-    memcpy(&pressure_pa_off_, data + 3, 2);
-    uint8_t temp_msb = data[5];
-    uint8_t temp_lsb = data[7] & 0xFC;
-    uint8_t humi_msb = data[6];
-    uint8_t humi_lsb = data[7] & 0x03;
-    // Serial.print("temp_msb = ");
-    // Serial.print(temp_msb, HEX);
-    // Serial.print(" << 6 ");
-    // Serial.println((uint16_t)(temp_msb) << 6, HEX);
-    // Serial.print("temp_lsb = ");
-    // Serial.print(temp_lsb, HEX);
-    // Serial.print(" >> 2 ");
-    // Serial.println((uint16_t)(temp_lsb >> 2), HEX);
-    uint16_t utemp = ((uint16_t)(temp_msb) << 6) | (uint16_t)(temp_lsb >> 2);
-    // Serial.print("utemp = ");
-    // Serial.println(utemp, HEX);
-    if (utemp < 8192) {
-      temperature_centi_deg_ = (int16_t)(utemp);
-    } else {
-      temperature_centi_deg_ = (int16_t)(0xC000 | utemp);
-    }
-    humidity_deci_percent_ = ((uint16_t)(humi_msb) << 2) | (uint16_t)(humi_lsb);
-    timestamp_ = kSecondsResolution * (uint32_t)(hour_twelfth_) + k2019epoch;
-  }
+  void PackSample(char *data);
 
-  bool SetTimeStamp(uint32_t seconds) {
-    timestamp_ = seconds;
-    if (timestamp_ < k2019epoch) {
-      hour_twelfth_ = 0;
-      return false;
-    }
-    hour_twelfth_ = (seconds - k2019epoch) / kSecondsResolution;
-    hour_twelfth_ &= 0x3FFFFF;  // forget bits of rank larger than 22!
-    return true;
-  }
+  /*
+    Construct a sample from either an encoded packed sample or just serialized
+    data members
+    @param data       pointer to the raw data to process
+    @param packed     does the data contain a packed or serialized sample
+  */
+  BaroSample(char *data, bool packed = true);
+
+  bool SetTimeStamp(uint32_t seconds);
+
+  bool SetPressure(uint32_t pressure);
+
+  bool SetTemperature(int32_t temperature);
+
+  bool SetHumidity(uint32_t humidity);
 
   uint32_t GetTimestamp() { return timestamp_; }
 
   uint32_t GetTimecount() { return hour_twelfth_; }
-  
-  bool SetPressure(uint32_t pressure) {
-    if (pressure > 125500) {
-      pressure_pa_off_ = UINT16_MAX;
-      return false;
-    }
-    pressure_pa_off_ = (uint16_t)(pressure - kPressureOffsetPa);
-    return true;
-  }
 
   /*
     Set the pressure
@@ -170,33 +112,10 @@ class BaroSample {
   bool SetPressureMilliBar(float pressure) {
     return SetPressure((uint32_t)(pressure * 100.0));
   }
-
-  bool SetTemperature(int32_t temperature) {
-    bool overflow = false;
-    if (temperature < -8192) {
-      temperature = -8192;
-      overflow = true;
-    }
-    if (temperature > 8191) {
-      temperature = 8191;
-      overflow = true;
-    }
-    temperature_centi_deg_ = (int16_t)(temperature);
-    return !overflow;
-  }
-
   bool SetTemeratureDegCelcius(float temperature) {
     return SetTemperature((int32_t)(temperature * 100.0));
   }
 
-  bool SetHumidity(uint32_t humidity) {
-    if (humidity > 10200) {
-      humidity_deci_percent_ = 0x3FF;
-      return false;
-    }
-    humidity_deci_percent_ = (uint16_t)(humidity / 10);
-    return true;
-  }
 
   bool SetHumidityPercent(float humidity) {
     return SetHumidity((uint32_t)(humidity * 100.0));
