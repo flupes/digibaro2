@@ -1,6 +1,9 @@
 // compile with:
-// pio ci .\test\ReadFlashSamples --board=zeroUSB
-// -l lib\RTClib -l lib\BaroSample -l lib\SPIMemory -l src -O "targets=upload"
+/*
+pio ci .\test\ReadFlashSamples -- board=zeroUSB -l lib\BaroUtils
+  -l lib\PermanentSamples -l lib\RTClib -l lib\BaroSample -l lib\SPIMemory
+  -l lib\RobustFlashIndexes -O "targets=upload
+*/
 
 // monitor with:
 // pio device monitor --port COM5 --baud 115200
@@ -11,10 +14,10 @@
 #include "baro_sample.h"
 #include "permanent_samples.h"
 
-// Global variables:
+    // Global variables:
 
-// On board SPI Flash Memory
-SPIFlash flash(kMiniUltraProOnBoardChipSelectPin);
+    // On board SPI Flash Memory
+    SPIFlash flash(kMiniUltraProOnBoardChipSelectPin);
 
 PermanentSamples samples(flash);
 

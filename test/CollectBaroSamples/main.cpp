@@ -1,7 +1,9 @@
 // compile with:
-// pio ci .\test\CollectBaroSamples --board=zeroUSB
-// -l lib\BME280_driver -l lib\RTClib -l lib\BaroSample -l lib\SPIMemory -l src
-// -O "targets=upload" --keep-build-dir
+/*
+ pio ci .\test\CollectBaroSamples --board=zeroUSB -l lib\BaroUtils
+   -l lib\BME280_driver -l lib\RTClib -l lib\BaroSample -l lib\SPIMemory
+   -l lib\PermanentSamples -O "targets=upload" --keep-build-dir
+*/
 
 // monitor with:
 // pio device monitor --port COM5 --baud 115200
