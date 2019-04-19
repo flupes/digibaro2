@@ -7,7 +7,7 @@
 #include "baro_sample.h"
 
 // compile with:
-// pio ci .\test --board=zeroUSB -l src -O "targets=upload"
+// pio ci .\test --board=zeroUSB -l src -l ..\BaroUtils -O "targets=upload"
 
 // monitor with:
 // pio device monitor --port COM5 --baud 115200
@@ -30,7 +30,7 @@ void setup() {
   inp.Print();
   inp.PackSample(buffer_write);
   inp.Inspect(buffer_write);
-  memcpy(buffer_read, buffer_write, kBaroSampleSize);
+  memcpy(buffer_read, buffer_write, kBaroPackedSampleSize);
   Serial.println();
 
   BaroSample outp(buffer_read);
@@ -44,7 +44,7 @@ void setup() {
   inn.Print();
   inn.PackSample(buffer_write);
   inn.Inspect(buffer_write);
-  memcpy(buffer_read, buffer_write, kBaroSampleSize);
+  memcpy(buffer_read, buffer_write, kBaroPackedSampleSize);
   Serial.println();
  
   BaroSample outn(buffer_read);
@@ -68,7 +68,7 @@ void setup() {
     bool error = false;
     BaroSample in(timestamp, pressure, temperature, humidity);
     in.PackSample(buffer_write);
-    memcpy(buffer_read, buffer_write, kBaroSampleSize);
+    memcpy(buffer_read, buffer_write, kBaroPackedSampleSize);
     BaroSample out(buffer_read);
     if (timestamp != out.GetTimestamp()) {
       Serial.println("Timestamp conversions failed!");
