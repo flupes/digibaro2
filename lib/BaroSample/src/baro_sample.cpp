@@ -1,14 +1,19 @@
 #include "baro_sample.h"
 #include "print_utils.h"
 
-void BaroSample::SerializeSample(char *data) {
-  memcpy(data, &timestamp_, 4);
-  memcpy(data + 4, &hour_twelfth_, 4);
-  memcpy(data + 8, &pressure_pa_off_, 2);
-  memcpy(data + 10, &humidity_deci_percent_, 2);
-  memcpy(data + 12, &temperature_centi_deg_, 2);
-  memcpy(data + 14, &timezone_, 1);
-  memcpy(data + 15, &reserved_, 1);
+bool BaroSample::operator==(BaroSample &s) {
+  if (timestamp_ != s.timestamp_ ) return false;
+  if (hour_twelfth_ != s.hour_twelfth_ ) return false;
+  if (pressure_pa_off_ != s.pressure_pa_off_ ) return false;
+  if (humidity_deci_percent_ != s.humidity_deci_percent_ ) return false;
+  if (temperature_centi_deg_ != s.temperature_centi_deg_ ) return false;
+  if (timezone_ != s.timezone_ ) return false;
+  if (reserved_ != s.reserved_ ) return false;
+  return true;
+}
+
+bool BaroSample::operator!=(BaroSample &s) {
+  return ! (*this == s);
 }
 
 void BaroSample::PackSample(char *data) {
@@ -81,6 +86,16 @@ BaroSample::BaroSample(char *data, bool packed) {
   }
 }
 
+void BaroSample::SerializeSample(char *data) {
+  memcpy(data, &timestamp_, 4);
+  memcpy(data + 4, &hour_twelfth_, 4);
+  memcpy(data + 8, &pressure_pa_off_, 2);
+  memcpy(data + 10, &humidity_deci_percent_, 2);
+  memcpy(data + 12, &temperature_centi_deg_, 2);
+  memcpy(data + 14, &timezone_, 1);
+  memcpy(data + 15, &reserved_, 1);
+}
+
 bool BaroSample::SetTimeStamp(uint32_t seconds) {
   timestamp_ = seconds;
   if (timestamp_ < k2019epoch) {
@@ -150,7 +165,7 @@ void BaroSample::Inspect(char *data) {
     Serial.print("humidity    = ");
     Serial.println(humidity_deci_percent_, HEX);
     Serial.print("  -->  data = ");
-    for (uint8_t i = 0; i < kBaroSampleSize; i++) {
+    for (uint8_t i = 0; i < kBaroPackedSampleSize; i++) {
       Serial.print(data[i], HEX);
       Serial.print(" ");
     }

@@ -48,14 +48,16 @@
   buffer should be of type PackedBaroSample to ensure it size.
 */
 
-const uint8_t kBaroSampleSize = 8;
+const uint8_t kBaroPackedSampleSize = 8;
+const uint8_t kBaroObjectSampleSize = 16;
 const uint32_t kPressureOffsetPa = 60000;
 const uint32_t kSecondsResolution = 60;
 // TODO: change to 300 for final program!
 const uint32_t k2019epoch = 1546300800;
 // epoch is divisible by 500 (5 minutes)
 
-using PackedBaroSample = char[kBaroSampleSize];
+using PackedBaroSample = char[kBaroPackedSampleSize];
+using SerializedBaroSample = char[kBaroObjectSampleSize];
 
 class BaroSample {
  public:
@@ -67,14 +69,27 @@ class BaroSample {
     @param humidity     relative humidity in hundreth of percent
   */
   BaroSample(uint32_t seconds, uint32_t pressure, int32_t temperature,
-             uint32_t humidity, int8_t tz = 0, uint8_t extra = 0)
-      : timezone_(tz), reserved_(extra) {
+             uint32_t humidity, int8_t tz = 0, uint8_t extra = 0) {
+    Set(seconds, pressure, temperature, humidity, tz, extra);
+  }
+
+  /*
+    Default constructor: build a dummy sample
+    */
+  BaroSample() {
+    Set(k2019epoch, 0, -8192, 0, 0, 0xFF);
+  }
+
+  void Set(uint32_t seconds, uint32_t pressure, int32_t temperature,
+           uint32_t humidity, int8_t tz = 0, uint8_t extra = 0) {
     SetTimeStamp(seconds);
     SetPressure(pressure);
     SetTemperature(temperature);
     SetHumidity(humidity);
+    timezone_ = tz;
+    reserved_ = extra;
   }
-
+  
   /*
     Serialiaze a baro sample as is (16 bytes)
   */
@@ -92,6 +107,10 @@ class BaroSample {
     @param packed     does the data contain a packed or serialized sample
   */
   BaroSample(char *data, bool packed = true);
+
+  bool operator==(BaroSample &right);
+
+  bool operator!=(BaroSample &right);
 
   bool SetTimeStamp(uint32_t seconds);
 
@@ -115,7 +134,6 @@ class BaroSample {
   bool SetTemeratureDegCelcius(float temperature) {
     return SetTemperature((int32_t)(temperature * 100.0));
   }
-
 
   bool SetHumidityPercent(float humidity) {
     return SetHumidity((uint32_t)(humidity * 100.0));
