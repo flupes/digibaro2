@@ -1,0 +1,31 @@
+#ifndef DIGIBARO_ROTATING_SAMPLES_H
+#define DIGIBARO_ROTATING_SAMPLES_H
+
+#include "SPIMemory.h"
+#include "baro_sample.h"
+#include "flash_config.h"
+#include "robust_flash_indexes.h"
+
+
+const uint32_t kRotatingSamplesAddrStart = kRingSamplesSectorStart * KB(4);
+
+class RotatingSamples {
+ public:
+  RotatingSamples(SPIFlash &flash);
+  void begin();
+  uint32_t GetTotalNumberOfSamples();
+  uint32_t GetUsableNumberOfSamples();
+  uint32_t GetLastSampleIndex();
+  uint32_t GetFirstIndexOfSerie(uint32_t length);
+  uint32_t AddSample(BaroSample &sample);
+  uint32_t GetIndexesCounter();
+  BaroSample GetSampleAtIndex(uint32_t index);
+
+ private:
+  SPIFlash &flash_;
+  RobustFlashIndexes indexes_;
+  uint32_t max_samples_;
+  uint32_t usable_samples_;
+};
+
+#endif
