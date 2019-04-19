@@ -3,8 +3,8 @@
 */
 
 // compile with:
-// pio ci .\test\TestRobustIndices --board=zeroUSB -l src -l ..\FastCRC -l
-// ..\SPIMemory -O "targets=upload"
+// pio ci .\test\TestRobustIndices --board=zeroUSB -l src -l ..\FastCRC
+// -l ..\SPIMemory -O "targets=upload"
 
 // monitor with:
 // pio device monitor --port COM5 --baud 115200
@@ -86,7 +86,7 @@ void setup() {
 
   indices.IncrementAndPrint(4, true);
 
-  indices.IncrementAndPrint(1024*3-5);
+  indices.IncrementAndPrint(1024*3-4);
   indices.PrintLast();
 
   indices.IncrementAndPrint(4, true);

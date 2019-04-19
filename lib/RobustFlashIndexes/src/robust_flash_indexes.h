@@ -82,6 +82,7 @@ private:
  uint32_t current_counter_;
  uint32_t indexes_start_[2];
  SPIFlash *flash_;
+ bool empty_;
 };
 
 #endif

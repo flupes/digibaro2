@@ -2,6 +2,8 @@
 
 #include <SPIMemory.h>
 
+// #define RBI_DEBUG
+
 #ifdef RBI_DEBUG
 #if defined(ARDUINO_SAMD_ZERO) && defined(SERIAL_PORT_USBVIRTUAL)
 #define PRINT(x) SERIAL_PORT_USBVIRTUAL.print(x)
@@ -19,7 +21,7 @@ FastCRC8 Int24Crc8::crc8_;
 
 RobustFlashIndexes::RobustFlashIndexes(uint32_t sector_start,
                                        uint32_t total_sectors)
-    : sector_start_(sector_start) {
+    : sector_start_(sector_start), empty_(false) {
   if (total_sectors % 2 != 0) {
     total_sectors--;
   }
@@ -31,7 +33,6 @@ RobustFlashIndexes::RobustFlashIndexes(uint32_t sector_start,
 
 void RobustFlashIndexes::begin(SPIFlash *flash) {
   flash_ = flash;
-  Serial.println("TOTO");
   PRINTLN("---- BEGIN ---- RobustFlashIndexes::begin()");
   PRINT("nb_sector:          ");
   PRINTLN(nb_sectors_);
@@ -51,6 +52,7 @@ void RobustFlashIndexes::begin(SPIFlash *flash) {
 }
 
 uint32_t RobustFlashIndexes::GetCounterAt(uint32_t index) {
+  if (empty_) return kInvalidInt24;
   uint32_t offset = current_index_ * kRobustIndexSize;
   return ReadCheckInt24(indexes_start_[0] + offset, indexes_start_[1] + offset);
 }
@@ -100,6 +102,7 @@ uint32_t RobustFlashIndexes::RetrieveLastIndex() {
     uint32_t second = flash_->readLong(addr[1]);
     // Check for initialized memory
     if (first == 0xFFFFFFFF || second == 0xFFFFFFFF) {
+      empty_ = false;
       PRINT("encountered unwritten memory for index ");
       PRINT(i + 1);
       PRINT(" at memory ");
@@ -148,9 +151,14 @@ uint32_t RobustFlashIndexes::Increment() {
     // this condition was not fully tested.
   }
 
-  current_index_++;
-  //   PRINT("next index = ");
-  //   PRINTLN(current_index_);
+  if (!empty_) {
+    current_index_++;
+    PRINT("Increment : new index = ");
+  } else {
+    empty_ = false;
+    PRINT("Increment : indexes not initialized yet, starting at index = ");
+  }
+  PRINTLN(current_index_);
   if (current_index_ >= nb_indexes_) {
     current_index_ = 0;
   }
@@ -159,7 +167,7 @@ uint32_t RobustFlashIndexes::Increment() {
 
   if (current_index_ % (kSectorLength / kRobustIndexSize) == 0) {
     // entering a new sector!
-    PRINT("Entering new sector for index = ");
+    PRINT("RobustFlashIndexes entering new sector for index = ");
     PRINTLN(current_index_);
     uint32_t code[2];
     code[0] = flash_->readLong(addr[0]);
@@ -168,7 +176,7 @@ uint32_t RobustFlashIndexes::Increment() {
       if (code[0] != code[1]) {
         PRINTLN("WARNING: sectors not in sync!");
       }
-      PRINT("Erasing sectors starting at: ");
+      PRINT("RobustFlashIndexes erasing sectors starting at: ");
       PRINT(addr[0]);
       PRINT(" / ");
       PRINTLN(addr[1]);
@@ -182,6 +190,7 @@ uint32_t RobustFlashIndexes::Increment() {
 }
 
 uint32_t RobustFlashIndexes::GetCurrentCounter() {
+  if (empty_) return 0;
   uint32_t offset = current_index_ * kRobustIndexSize;
   return ReadCheckInt24(indexes_start_[0] + offset, indexes_start_[1] + offset);
 }
@@ -190,13 +199,16 @@ bool RobustFlashIndexes::InitializeMemory() {
   PRINTLN("RobustFlashIndexes::InitializeMemory()");
   uint32_t addr[2] = {indexes_start_[0], indexes_start_[1]};
   PRINT("Starting to erase sectors... ");
+  uint8_t errors_count = 0;
   for (uint32_t i = 0; i < nb_sectors_; i++) {
     if (!flash_->eraseSector(addr[0])) {
+      errors_count++;
       PRINTLN();
       PRINT("Error erasing sector starting at ");
       PRINTLN(addr[0]);
     }
     if (!flash_->eraseSector(addr[1])) {
+      errors_count++;
       PRINTLN();
       PRINT("Error erasing sector starting at ");
       PRINTLN(addr[1]);
@@ -205,10 +217,10 @@ bool RobustFlashIndexes::InitializeMemory() {
     addr[1] += kSectorLength;
   }
   PRINTLN("Done.");
+  empty_ = true;
   current_index_ = 0;
   current_counter_ = 0;
-  return DoubleWriteInt24(current_counter_, indexes_start_[0],
-                          indexes_start_[1]);
+  return (errors_count == 0);
 }
 
 uint32_t RobustFlashIndexes::ReadCheckInt24(uint32_t addr1, uint32_t addr2) {
@@ -238,12 +250,12 @@ uint32_t RobustFlashIndexes::ReadCheckInt24(uint32_t addr1, uint32_t addr2) {
 bool RobustFlashIndexes::DoubleWriteInt24(uint32_t value, uint32_t addr1,
                                           uint32_t addr2) {
   uint32_t code = Int24Crc8::Create(value);
-  //   PRINT("Double write(");
-  //   PRINT(value);
-  //   PRINT(") : addr1=");
-  //   PRINT(addr1);
-  //   PRINT(" / addr2=");
-  //   PRINTLN(addr2);
+    PRINT("Double write(");
+    PRINT(value);
+    PRINT(") : addr1=");
+    PRINT(addr1);
+    PRINT(" / addr2=");
+    PRINTLN(addr2);
   if (flash_->writeLong(addr1, code, true)) {
     if (flash_->writeLong(addr2, code, true)) {
       return true;
