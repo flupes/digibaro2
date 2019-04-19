@@ -10,11 +10,11 @@ constexpr uint32_t kPermanentSampleBytesLength = 8;
 
 // Memory Map
 constexpr uint32_t kRobustIndexesSectorStart = 4;
-constexpr uint32_t kRobutsIndexesSectorLength =
+constexpr uint32_t kRobustIndexesSectorLength =
     6;  // 2*(2+1) sectors --> 3072 indices
 
 constexpr uint32_t kRingSamplesSectorStart =
-    kRobustIndexesSectorStart + kRobutsIndexesSectorLength;
+    kRobustIndexesSectorStart + kRobustIndexesSectorLength;
 constexpr uint32_t kRingSamplesSectorLength = 12;  // 3072*16[sample_size] / 4096
 
 constexpr uint32_t kPermanentSamplesSectorStart =
