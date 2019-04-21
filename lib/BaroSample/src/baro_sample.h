@@ -51,9 +51,16 @@
 const uint8_t kBaroPackedSampleSize = 8;
 const uint8_t kBaroObjectSampleSize = 16;
 const uint32_t kPressureOffsetPa = 60000;
-const uint32_t kSecondsResolution = 60;
-// TODO: change to 300 for final program!
-const uint32_t k2019epoch = 1546300800;
+const uint32_t kSecondsResolution =
+    60;  // Resolution of the compacted timestamps
+const uint32_t kPermanentPeriodSeconds =
+    300;  // Interval in seconds between two permanent samples stored in flash
+
+// TODO: change for final program:
+//   - kSecondsResolution to 300
+//   - kPermanentPeriodSeconds to 3600
+
+const uint32_t k2019epoch = 1546300800;  // Offset for compacted timestamps
 // epoch is divisible by 500 (5 minutes)
 
 using PackedBaroSample = char[kBaroPackedSampleSize];
@@ -76,9 +83,7 @@ class BaroSample {
   /*
     Default constructor: build a dummy sample
     */
-  BaroSample() {
-    Set(k2019epoch, 0, -8192, 0, 0, 0xFF);
-  }
+  BaroSample() { Set(k2019epoch, 0, -8192, 0, 0, 0xFF); }
 
   void Set(uint32_t seconds, uint32_t pressure, int32_t temperature,
            uint32_t humidity, int8_t tz = 0, uint8_t extra = 0) {
@@ -89,7 +94,7 @@ class BaroSample {
     timezone_ = tz;
     reserved_ = extra;
   }
-  
+
   /*
     Serialiaze a baro sample as is (16 bytes)
   */
