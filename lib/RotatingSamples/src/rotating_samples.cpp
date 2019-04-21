@@ -1,9 +1,5 @@
 #include "rotating_samples.h"
 
-#ifdef RS_DEBUG
-#define Serial SERIAL_PORT_USBVIRTUAL
-#endif
-
 RotatingSamples::RotatingSamples(SPIFlash& flash)
     : flash_(flash),
       indexes_(kRobustIndexesSectorStart, kRobustIndexesSectorLength) {
@@ -12,14 +8,8 @@ RotatingSamples::RotatingSamples(SPIFlash& flash)
       (kRingSamplesSectorLength - 1) * KB(4) / kRingSampleByteLength;
 }
 
-void RotatingSamples::begin() {
-  indexes_.begin(&flash_);
-#ifdef RS_DEBUG
-  Serial.print("Usable samples = ");
-  Serial.print(usable_samples_);
-  Serial.print(" / Total samples = ");
-  Serial.println(max_samples_);
-#endif
+uint32_t RotatingSamples::begin() {
+  return indexes_.begin(&flash_);
 }
 
 uint32_t RotatingSamples::GetTotalNumberOfSamples() { return max_samples_; }
@@ -30,27 +20,43 @@ uint32_t RotatingSamples::GetLastSampleIndex() {
   return indexes_.GetCurrentIndex();
 }
 
-uint32_t RotatingSamples::GetFirstIndexOfSerie(uint32_t length) {
-  uint32_t last = indexes_.GetCurrentIndex();
+uint32_t RotatingSamples::GetIndexIterator(uint32_t length) {
+  iterator_end_ = true;
+  
+  last_index_iterator_ = GetLastSampleIndex();
   // Serial.print("GetFirstIndexOfSerie(");
   // Serial.print(length);
   // Serial.print(") : last=");
-  // Serial.println(last);
-  uint32_t first = kInvalidInt24;
-  if (length > usable_samples_) return first;
-  if (last < length - 1) {
+  // Serial.println(last_index_iterator_);
+
+  current_index_iterator_ = kInvalidInt24;
+  if (length > usable_samples_) return current_index_iterator_;
+  if (last_index_iterator_ < length - 1) {
     // Serial.print("last<length-1");
-    first = max_samples_ + last + 1 - length;
+    current_index_iterator_ = max_samples_ + last_index_iterator_ + 1 - length;
     // make sure we fall on a initialized value (before a full buffer)
-    uint32_t counter = indexes_.GetCounterAt(first);
-    if (counter == kInvalidInt24) first = 0;
+    uint32_t counter = indexes_.GetCounterAt(current_index_iterator_);
+    if (counter == kInvalidInt24) current_index_iterator_ = 0;
   } else {
     // Serial.print("last>=length-1");
-    first = last + 1 - length;
+    current_index_iterator_ = last_index_iterator_ + 1 - length;
   }
-  // Serial.print(" --> first=");
-  // Serial.println(first);
-  return first;
+  // Serial.print(" --> current_index_iterator_=");
+  Serial.println(current_index_iterator_);
+  iterator_end_ = false;
+  return current_index_iterator_;
+}
+
+uint32_t RotatingSamples::GetNextIndex() {
+  if (iterator_end_) return kInvalidInt24;
+  current_index_iterator_++;
+  if (current_index_iterator_ >= max_samples_) {
+    current_index_iterator_ = 0;
+  }
+  if (current_index_iterator_ == last_index_iterator_) {
+    iterator_end_ = true;
+  }
+  return current_index_iterator_;
 }
 
 uint32_t RotatingSamples::AddSample(BaroSample& sample) {
@@ -59,26 +65,20 @@ uint32_t RotatingSamples::AddSample(BaroSample& sample) {
   uint32_t addr = kRotatingSamplesAddrStart + index * kRingSampleByteLength;
   SerializedBaroSample data;
   sample.SerializeSample(data);
-#ifdef RS_DEBUG
-  Serial.print("Write Sample to addr = ");
-  Serial.println(addr);
-  Serial.print("Data to flash =  ");
-  for (size_t u = 0; u < kRingSampleByteLength; u++) {
-    Serial.print(data[u], HEX);
-  }
-  Serial.println();
-#endif
+
+  // Serial.print("Write Sample to addr = ");
+  // Serial.println(addr);
+  // Serial.print("Data to flash =  ");
+  // for (size_t u = 0; u < kRingSampleByteLength; u++) {
+  //   Serial.print(data[u], HEX);
+  // }
+  // Serial.println();
+
   if (index % (kSectorLength / kRingSampleByteLength) == 0) {
     // entering a new sector!
-    // Serial.print("RotatingSamples entering new sector for index = ");
-    // Serial.println(index);
     uint32_t code;
     code = flash_.readLong(addr);
     if (code != 0xFFFFFFFF) {
-#ifdef RS_DEBUG
-      Serial.print("RotatingSample erasing sector starting at: ");
-      Serial.println(addr);
-#endif
       flash_.eraseSector(addr);
     }
   }

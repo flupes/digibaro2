@@ -12,11 +12,12 @@ const uint32_t kRotatingSamplesAddrStart = kRingSamplesSectorStart * KB(4);
 class RotatingSamples {
  public:
   RotatingSamples(SPIFlash &flash);
-  void begin();
+  uint32_t begin();
   uint32_t GetTotalNumberOfSamples();
   uint32_t GetUsableNumberOfSamples();
   uint32_t GetLastSampleIndex();
-  uint32_t GetFirstIndexOfSerie(uint32_t length);
+  uint32_t GetIndexIterator(uint32_t length);
+  uint32_t GetNextIndex();
   uint32_t AddSample(BaroSample &sample);
   uint32_t GetIndexesCounter();
   BaroSample GetSampleAtIndex(uint32_t index);
@@ -26,6 +27,9 @@ class RotatingSamples {
   RobustFlashIndexes indexes_;
   uint32_t max_samples_;
   uint32_t usable_samples_;
+  uint32_t last_index_iterator_;
+  uint32_t current_index_iterator_;
+  bool iterator_end_;
 };
 
 #endif
