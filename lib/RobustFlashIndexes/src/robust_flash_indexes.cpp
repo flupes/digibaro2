@@ -31,7 +31,7 @@ RobustFlashIndexes::RobustFlashIndexes(uint32_t sector_start,
   indexes_start_[1] = indexes_start_[0] + nb_sectors_ * kSectorLength;
 }
 
-void RobustFlashIndexes::begin(SPIFlash *flash) {
+uint32_t RobustFlashIndexes::begin(SPIFlash *flash) {
   flash_ = flash;
   PRINTLN("---- BEGIN ---- RobustFlashIndexes::begin()");
   PRINT("nb_sector:          ");
@@ -49,6 +49,7 @@ void RobustFlashIndexes::begin(SPIFlash *flash) {
   PRINT("current index = ");
   PRINTLN(current_index_);
   PRINTLN("---- END ---- RobustFlashIndexes::begin()");
+  return current_index_;
 }
 
 uint32_t RobustFlashIndexes::GetCounterAt(uint32_t index) {

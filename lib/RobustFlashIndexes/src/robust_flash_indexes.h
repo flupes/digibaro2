@@ -47,7 +47,7 @@ class RobustFlashIndexes {
   */
   RobustFlashIndexes(uint32_t sector_start, uint32_t total_sectors);
 
-  void begin(SPIFlash *flash);
+  uint32_t begin(SPIFlash *flash);
 
   uint32_t Increment();
 
