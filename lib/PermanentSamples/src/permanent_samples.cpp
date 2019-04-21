@@ -39,13 +39,13 @@ uint32_t PermanentSamples::AddSample(BaroSample& sample) {
   uint32_t addr = number_of_samples_ * kPermanentSampleBytesLength +
                   kPermanentSamplesAddrStart;
   if (number_of_samples_ < max_samples_) {
-    bool ret = flash_.writeCharArray(addr, data, kBaroSampleSize);
+    bool ret = flash_.writeCharArray(addr, data, kBaroPackedSampleSize);
     if (ret) {
       number_of_samples_++;
-      PRINT("Wrote successfuly sample # ");
-      PRINT(number_of_samples_);
-      PRINT(" at address ");
-      PRINTLN(addr);
+      // PRINT("Wrote successfuly sample # ");
+      // PRINT(number_of_samples_);
+      // PRINT(" at address ");
+      // PRINTLN(addr);
     } else {
       PRINT("Cannot write sample # ");
       PRINT(number_of_samples_);
@@ -73,7 +73,7 @@ BaroSample PermanentSamples::GetSampleAtAddr(uint32_t addr) {
     return BaroSample();
   }
   PackedBaroSample data;
-  flash_.readCharArray(addr, data, kBaroSampleSize);
+  flash_.readCharArray(addr, data, kBaroPackedSampleSize);
   return BaroSample(data);
 }
 
@@ -84,6 +84,8 @@ BaroSample PermanentSamples::GetSampleWithIndex(uint32_t index) {
     return GetSampleAtAddr(addr);
   }
   // Index out of range --> return invalid sample
+  PRINT("GetSampleWithIndex with argument out of range: ");
+  PRINTLN(index);
   return BaroSample(k2019epoch, 0, 0, 0);
 }
 
