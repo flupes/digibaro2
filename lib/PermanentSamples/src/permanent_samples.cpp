@@ -52,20 +52,25 @@ uint32_t PermanentSamples::AddSample(BaroSample& sample) {
       PRINT(" at address ");
       PRINTLN(addr);
     }
-  }
-  else {
+  } else {
     PRINTLN("Storage already full: cannot add a new sample!");
   }
   return number_of_samples_;
 }
 
 BaroSample PermanentSamples::GetSampleAtAddr(uint32_t addr) {
+  if (addr >
+      kPermanentSamplesAddrStart + max_samples_ * kPermanentSampleBytesLength) {
+        PRINT("GetSampleAddr with argument out of range: ");
+        PRINTLN(addr);
+    return BaroSample();
+  }
   uint32_t word = flash_.readLong(addr);
   if (word == 0xFFFFFFFF) {
     PRINT("Unvalid sample read at addr = ");
     PRINT(addr);
     PRINTLN(" ! --> Return dummy sample :-(");
-    return BaroSample(k2019epoch, 0, 0, 0);
+    return BaroSample();
   }
   PackedBaroSample data;
   flash_.readCharArray(addr, data, kBaroSampleSize);
@@ -80,6 +85,10 @@ BaroSample PermanentSamples::GetSampleWithIndex(uint32_t index) {
   }
   // Index out of range --> return invalid sample
   return BaroSample(k2019epoch, 0, 0, 0);
+}
+
+BaroSample PermanentSamples::GetLastSample() {
+  return GetSampleAtAddr(GetLastSampleAddr());
 }
 
 uint32_t PermanentSamples::GetCurrentNumberOfSamples() {

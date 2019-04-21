@@ -13,6 +13,8 @@ class PermanentSamples {
   PermanentSamples(SPIFlash &flash);
   uint32_t begin();
   uint32_t AddSample(BaroSample &sample);
+  uint32_t GetLastIndex();
+  BaroSample GetLastSample();
   BaroSample GetSampleWithIndex(uint32_t index);
   uint32_t GetCurrentNumberOfSamples();
   uint32_t GetMaxNumberOfSamples();
