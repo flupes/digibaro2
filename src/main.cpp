@@ -99,12 +99,12 @@ void collect_sample(DateTime &dt) {
     Serial.print(" | humi = ");
     Serial.print(sample.HumidityPercent());
     Serial.println();
-    Serial.print("Sample witten to rotating flash with index # ");
+    Serial.print("Sample written to rotating flash with index # ");
     Serial.println(index);
   }
 }
 
-BaroSample hourly_average(DateTime &dt) {
+void hourly_average(DateTime &dt) {
   uint32_t current_seconds = dt.unixtime();
   uint32_t count = 0;
   uint32_t samples_per_hour = kPermanentPeriodSeconds / kSecondsResolution;
@@ -150,7 +150,9 @@ BaroSample hourly_average(DateTime &dt) {
     Serial.println(count);
     sample.PrettyPrint();
   }
-  return sample;
+  uint32_t nbs = permanent_samples.AddSample(sample);
+  PRINT("Saved hourly sample # ");
+  PRINTLN(nbs);
 }
 
 void loop() {
@@ -159,18 +161,15 @@ void loop() {
 
   DateTime utc = rtc.now();
 
-  if (utc.minute() > minute) {
+  if (utc.second() == 0 && utc.minute() > minute) {
     collect_sample(utc);
 
     if ( utc.minute() % (kPermanentPeriodSeconds/kSecondsResolution) == 0) {
-      BaroSample sample = hourly_average(utc);
-      uint32_t count = permanent_samples.AddSample(sample);
-      Serial.print("Saved hourly sample # ");
-      Serial.println(count);
+      hourly_average(utc);
     }
 
     minute = utc.minute();
   }
 
-  delay(1000);
+  delay(100);
 }
