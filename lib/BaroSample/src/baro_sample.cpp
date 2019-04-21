@@ -154,6 +154,19 @@ void BaroSample::Print() {
   }
 }
 
+void BaroSample::PrettyPrint() {
+  if (Serial) {
+    Serial.print("UTC unix seconds = ");
+    Serial.print(GetTimestamp());
+    Serial.print(" s | press = ");
+    Serial.print(PressureMilliBar());
+    Serial.print(" mBar | temp = ");
+    Serial.print(TemperatureDegCelcius());
+    Serial.print(" deg C | humi = ");
+    Serial.print(HumidityPercent());
+    Serial.println(" %");
+  }
+}
 void BaroSample::Inspect(char *data) {
   if (Serial) {
     Serial.print("hourtwelfth = ");

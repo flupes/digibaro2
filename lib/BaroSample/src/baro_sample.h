@@ -163,6 +163,7 @@ class BaroSample {
   float HumidityPercent() { return (float)(humidity_deci_percent_) / 10.0; }
 
   void Print();
+  void PrettyPrint();
   void Inspect(char *data);
 
  private:
