@@ -1,6 +1,6 @@
 // compile with:
 /*
-pio ci .\test\ReadFlashSamples -- board=zeroUSB -l lib\BaroUtils
+pio ci .\test\ReadFlashSamples --board=zeroUSB -l lib\BaroUtils
   -l lib\PermanentSamples -l lib\RTClib -l lib\BaroSample -l lib\SPIMemory
   -l lib\RobustFlashIndexes -O "targets=upload
 */
