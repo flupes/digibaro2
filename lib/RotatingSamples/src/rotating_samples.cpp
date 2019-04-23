@@ -1,5 +1,7 @@
 #include "rotating_samples.h"
 
+#include "print_utils.h"
+
 RotatingSamples::RotatingSamples(SPIFlash& flash)
     : flash_(flash),
       indexes_(kRobustIndexesSectorStart, kRobustIndexesSectorLength) {
@@ -42,7 +44,7 @@ uint32_t RotatingSamples::GetIndexIterator(uint32_t length) {
     current_index_iterator_ = last_index_iterator_ + 1 - length;
   }
   // Serial.print(" --> current_index_iterator_=");
-  Serial.println(current_index_iterator_);
+  // Serial.println(current_index_iterator_);
   iterator_end_ = false;
   return current_index_iterator_;
 }
@@ -78,8 +80,16 @@ uint32_t RotatingSamples::AddSample(BaroSample& sample) {
     // entering a new sector!
     uint32_t code;
     code = flash_.readLong(addr);
+    PRINT("RotatingSamples::AddSample entering new sector : ");
     if (code != 0xFFFFFFFF) {
-      flash_.eraseSector(addr);
+      PRINTLN("Need to erase first.");
+      if ( !flash_.eraseSector(addr) ) {
+        PRINT("Error erasing sector starting at addr = ");
+        PRINTLN(addr);
+      }
+    }
+    else {
+      PRINTLN("Sector seems already initialized.");
     }
   }
 

@@ -161,7 +161,7 @@ void loop() {
 
   DateTime utc = rtc.now();
 
-  if (utc.second() == 0 && utc.minute() > minute) {
+  if (utc.second() == 0 && utc.minute() != minute) {
     collect_sample(utc);
 
     if ( utc.minute() % (kPermanentPeriodSeconds/kSecondsResolution) == 0) {
