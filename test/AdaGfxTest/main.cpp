@@ -187,6 +187,7 @@ void setup() {
   printText(&Hack_Bold18pt7b, short_str);
   printText(&Hack_Bold24pt7b, short_str);
 
+  // Best selection...
   printText(&ClearSans_Medium10pt7b, "1024-");
 
   canvas->drawRect(0, 0, 400, 300, COLORED);
