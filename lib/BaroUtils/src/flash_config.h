@@ -9,7 +9,12 @@ constexpr uint32_t kRingSampleByteLength = 16;
 constexpr uint32_t kPermanentSampleBytesLength = 8;
 
 // Memory Map
+#ifndef DIGI_TESTING
 constexpr uint32_t kRobustIndexesSectorStart = 4;
+#else
+constexpr uint32_t kRobustIndexesSectorStart = 256;
+#endif
+
 constexpr uint32_t kRobustIndexesSectorLength =
     6;  // 2*(2+1) sectors --> 3072 indices
 
