@@ -2,16 +2,8 @@
 
 #include <SPIMemory.h>
 
-// #define RBI_DEBUG
-
 #ifdef RBI_DEBUG
-#if defined(ARDUINO_SAMD_ZERO) && defined(SERIAL_PORT_USBVIRTUAL)
-#define PRINT(x) SERIAL_PORT_USBVIRTUAL.print(x)
-#define PRINTLN(x) SERIAL_PORT_USBVIRTUAL.println(x)
-#else
-#define PRINT(x) Serial.print(x)
-#define PRINTLN(x) Serial.println(x)
-#endif
+#include "print_utils.h"
 #else
 #define PRINT(x)
 #define PRINTLN(x)
@@ -33,7 +25,7 @@ RobustFlashIndexes::RobustFlashIndexes(uint32_t sector_start,
 
 uint32_t RobustFlashIndexes::begin(SPIFlash *flash) {
   flash_ = flash;
-  PRINTLN("---- BEGIN ---- RobustFlashIndexes::begin()");
+  PRINTLN("RobustFlashIndexes::begin()");
   PRINT("nb_sector:          ");
   PRINTLN(nb_sectors_);
   PRINT("nb_indexes:         ");
@@ -48,7 +40,6 @@ uint32_t RobustFlashIndexes::begin(SPIFlash *flash) {
 
   PRINT("current index = ");
   PRINTLN(current_index_);
-  PRINTLN("---- END ---- RobustFlashIndexes::begin()");
   return current_index_;
 }
 

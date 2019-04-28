@@ -1,6 +1,11 @@
 #include "rotating_samples.h"
 
+#ifdef DIGI_DEBUG
 #include "print_utils.h"
+#else
+#define PRINT(x)
+#define PRINTLN(x)
+#endif
 
 RotatingSamples::RotatingSamples(SPIFlash& flash)
     : flash_(flash),
@@ -11,6 +16,11 @@ RotatingSamples::RotatingSamples(SPIFlash& flash)
 }
 
 uint32_t RotatingSamples::begin() {
+  PRINTLN("RotatingSamples::begin()");
+  PRINT("rotating sample addr start = ");
+  PRINTLN(kRotatingSamplesAddrStart);
+  PRINT("max number of rotating samples = ");
+  PRINTLN(max_samples_);
   return indexes_.begin(&flash_);
 }
 
@@ -80,16 +90,16 @@ uint32_t RotatingSamples::AddSample(BaroSample& sample) {
     // entering a new sector!
     uint32_t code;
     code = flash_.readLong(addr);
-    PRINT("RotatingSamples::AddSample entering new sector : ");
+    // PRINT("RotatingSamples::AddSample entering new sector : ");
     if (code != 0xFFFFFFFF) {
-      PRINTLN("Need to erase first.");
+      // PRINTLN("Need to erase first.");
       if ( !flash_.eraseSector(addr) ) {
         PRINT("Error erasing sector starting at addr = ");
         PRINTLN(addr);
       }
     }
     else {
-      PRINTLN("Sector seems already initialized.");
+      // PRINTLN("Sector seems already initialized.");
     }
   }
 
