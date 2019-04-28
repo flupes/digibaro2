@@ -44,7 +44,8 @@ void setup() {
 #endif
 
   // make sure we are not reading known values
-  uint32_t pressure = random(80000, 100000); 
+  randomSeed(analogRead(0));
+  uint32_t pressure = random(90000, 100000);
   int32_t temperature = -6000;
   uint32_t humidity = 0;
   uint32_t timestamp = k2019epoch;
@@ -60,6 +61,8 @@ void setup() {
   Serial.println("Write samples to flash...");
   uint16_t error_count = 0;
   for (uint32_t i = 0; i < kMaxSamples; i++) {
+    // Serial.print("pressure = ");
+    // Serial.println(pressure);
     samples_ref[i].Set(timestamp, pressure, temperature, humidity);
     timestamp += 3600;
     pressure += 20;
@@ -85,9 +88,9 @@ void setup() {
   for (uint32_t i = 0; i < kMaxSamples; i++) {
     BaroSample sample = samples_ring.GetSampleAtIndex(index);
     // Serial.println("Ref sample:");
-    // samples_ref[i].Print();
+    // samples_ref[i].PrettyPrint();
     // Serial.println("Read sample:");
-    // sample.Print();
+    // sample.PrettyPrint();
     if (sample != samples_ref[i]) {
       Serial.print("Ref sample # ");
       Serial.print(i);
