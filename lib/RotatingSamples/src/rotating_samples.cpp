@@ -32,6 +32,31 @@ uint32_t RotatingSamples::GetLastSampleIndex() {
   return indexes_.GetCurrentIndex();
 }
 
+uint32_t RotatingSamples::GetReverseIndexIterator() {
+  rev_index_iterator_ = GetLastSampleIndex();
+  return rev_index_iterator_;
+}
+
+uint32_t RotatingSamples::GetPreviousIndex() {
+  uint32_t current_counter = indexes_.GetCounterAt(rev_index_iterator_);
+  if (rev_index_iterator_ > 0) {
+    rev_index_iterator_--;
+  }
+  else {
+    rev_index_iterator_ = max_samples_ - 1;
+  }
+  uint32_t prev_counter = indexes_.GetCounterAt(rev_index_iterator_);
+  if ( prev_counter == kInvalidInt24 ) {
+    rev_index_iterator_ = kInvalidInt24;
+  }
+  else {
+    if ( prev_counter > current_counter) {
+      rev_index_iterator_ = kInvalidInt24;
+    }
+  }
+  return rev_index_iterator_;
+}
+
 uint32_t RotatingSamples::GetIndexIterator(uint32_t length) {
   iterator_end_ = true;
   
@@ -58,7 +83,6 @@ uint32_t RotatingSamples::GetIndexIterator(uint32_t length) {
   iterator_end_ = false;
   return current_index_iterator_;
 }
-
 uint32_t RotatingSamples::GetNextIndex() {
   if (iterator_end_) return kInvalidInt24;
   current_index_iterator_++;

@@ -18,6 +18,8 @@ class RotatingSamples {
   uint32_t GetLastSampleIndex();
   uint32_t GetIndexIterator(uint32_t length);
   uint32_t GetNextIndex();
+  uint32_t GetReverseIndexIterator();
+  uint32_t GetPreviousIndex();
   uint32_t AddSample(BaroSample &sample);
   uint32_t GetIndexesCounter();
   BaroSample GetSampleAtIndex(uint32_t index);
@@ -29,6 +31,7 @@ class RotatingSamples {
   uint32_t usable_samples_;
   uint32_t last_index_iterator_;
   uint32_t current_index_iterator_;
+  uint32_t rev_index_iterator_;
   bool iterator_end_;
 };
 
