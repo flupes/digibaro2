@@ -67,15 +67,20 @@ uint32_t DisplaySamples::Begin(RotatingSamples *src, SampleDataType dt) {
       }
     }
   }
-  index_ = buffer_index;
+  index_ = 0;
   return length_;
 }
 
 uint32_t DisplaySamples::AppendData(int16_t data) {
   uint32_t new_index = index_ + length_;
+  PRINT("BEFORE index_="); PRINT(index_); PRINT(" / length_="); PRINT(length_);
+  PRINT(" --> new temp index="); PRINT(new_index);
   if (new_index >= kGraphPxLength) new_index -= kGraphPxLength;
   buffer_[new_index] = data;
   index_++;
   if (index_ >= kGraphPxLength) index_ -= kGraphPxLength;
+  PRINT(" / new index="); PRINT(new_index);
+  PRINT(" ==== AFTER index_="); PRINT(index_);
+  PRINT(" / last_index="); PRINTLN(GetLastIndex());
   return new_index;
 }

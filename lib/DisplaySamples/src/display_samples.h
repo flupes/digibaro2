@@ -27,6 +27,7 @@ class DisplaySamples {
     // reference can be signed: we will never have such huge indices or offset!
     // We want to minimize checks: the caller should not provide and offset
     // larger thant he buffer!
+    // TODO does not handle non-full buffers !!!
     int32_t index = reference + offset;
     if (index >= kGraphPxLength) index -= kGraphPxLength;
     if (index < 0) index += kGraphPxLength;
@@ -46,6 +47,7 @@ class DisplaySamples {
     }
     return 0xFFFF;
   }
+
   uint32_t AppendData(int16_t data);
 
  private:

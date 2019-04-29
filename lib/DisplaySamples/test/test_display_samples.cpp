@@ -52,17 +52,29 @@ void setup() {
   PRINTLN(weekly_length);
 
   uint32_t index = daily_buffer.BufferStartIndex();
+  PRINTLN("====== AFTER READING SAMPLES FROM FLASH")
   PRINT("start of buffer = ");
   PRINTLN(index);
+  PRINT("last index of buffer = ");
+  PRINTLN(daily_buffer.GetLastIndex());
 
-  for (size_t s=0; s<8; s++) {
+  for (size_t s=0; s<5; s++) {
     daily_buffer.AppendData((s+1)*10);
   }
 
+  PRINTLN("====== AFTER ADDING 5 SAMPLE TO RAM")
   index = daily_buffer.GetLastIndex();
-  index = daily_buffer.IndexOffset(index, -50);
+  PRINT("last index of buffer = ");
+  PRINTLN(index);
+  size_t samples_to_print = 50;
+  index = daily_buffer.IndexOffset(index, 1-samples_to_print);
+  PRINT("index of last - 49 = ");
+  PRINTLN(index);
 
-  for (size_t i=0; i<50; i++) {
+  for (size_t i=0; i<samples_to_print; i++) {
+    PRINT("index=");
+    PRINT(index);
+    PRINT(" -> data=");
     PRINTLN(daily_buffer.DataAtIndex(index));
     index = daily_buffer.IndexAfter(index);
   }  
