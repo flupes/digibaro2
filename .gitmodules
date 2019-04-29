@@ -13,3 +13,6 @@
 [submodule "lib/RTCZero"]
 	path = lib/RTCZero
 	url = https://github.com/arduino-libraries/RTCZero.git
+[submodule "lib/Adafruit-GFX-Library"]
+	path = lib/Adafruit-GFX-Library
+	url = https://github.com/flupes/Adafruit-GFX-Library.git
