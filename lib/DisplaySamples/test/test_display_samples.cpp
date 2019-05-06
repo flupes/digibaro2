@@ -62,7 +62,7 @@ void setup() {
     daily_buffer.AppendData((s+1)*10);
   }
 
-  PRINTLN("====== AFTER ADDING 5 SAMPLE TO RAM")
+  PRINTLN("====== AFTER ADDING 5 SAMPLES TO RAM")
   index = daily_buffer.GetLastIndex();
   PRINT("last index of buffer = ");
   PRINTLN(index);
