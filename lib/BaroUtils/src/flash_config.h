@@ -1,7 +1,7 @@
 #ifndef DIGIBARO_FLASH_CONFIG_H
 #define DIGIBARO_FLASH_CONFIG_H
 
-#include <ctype.h>
+#include <stdint.h>
 
 // Flash memory types size (should be merged with BaroSample, etc.)
 constexpr uint32_t kRobustIndexByteLength = 4;
