@@ -62,3 +62,14 @@ int EpdIf::IfInit(void) {
     return 0;
 }
 
+void EpdIf::IfSleep(void) {
+    // Set all the pin in "input pullup" mode to avoid
+    // having any external pullup/dow drawing current.
+    // The internal pullup resistor of the level converter
+    // on the board seem to pullup even if the chip has not 
+    // power on the 3.3V side.
+    pinMode(CS_PIN, INPUT_PULLUP);
+    pinMode(RST_PIN, INPUT_PULLUP);
+    pinMode(DC_PIN, INPUT_PULLUP);
+    pinMode(BUSY_PIN, INPUT_PULLUP);
+}
