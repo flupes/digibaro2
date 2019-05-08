@@ -68,16 +68,15 @@ class RobustFlashIndexes {
  public:
   /**
    * sector_start : first sector for the indexes, counted in sector (not bytes)
-   * total_sectors: number of sectors to reserve for the indexes Since two
-   * copies
-   * of the indexes are stored, only half of the total_sector is actually useful
-   * information. An even number is required (otherwise the evennumber below the
-   * one given is used)
+   * total_sectors: number of sectors to reserve for the indexes.
+   *     Since two copies of the indexes are stored, only half of the
+   *     total_sector is actually useful information. An even number is required
+   *     (otherwise the evennumber below the one given is used)
   */
   RobustFlashIndexes(uint32_t sector_start, uint32_t total_sectors);
 
   /**
-   * Really start the object: retrieve the last index on flash and initialize 
+   * Really start the object: retrieve the last index on flash and initialize
    * memory if not ready yet.
    */
   uint32_t begin(SPIFlash *flash);
