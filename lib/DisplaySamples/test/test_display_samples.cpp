@@ -58,6 +58,15 @@ void setup() {
   PRINT("last index of buffer = ");
   PRINTLN(daily_buffer.GetLastIndex());
 
+  PRINT("daily stats: min = ");
+  PRINT(daily_buffer.min());
+  PRINT(" / max = ");
+  PRINTLN(daily_buffer.max());
+  PRINT("weekly stats: min = ");
+  PRINT(weekly_buffer.min());
+  PRINT(" / max = ");
+  PRINTLN(weekly_buffer.max());
+
   for (size_t s=0; s<5; s++) {
     daily_buffer.AppendData((s+1)*10);
   }
