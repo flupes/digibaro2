@@ -6,10 +6,9 @@
 
 
 /* Compile with:
-pio ci .\test\SetSampleData --board=zeroUSB -l .\lib\BaroUtils
-  -l .\lib\BaroSample -l .\lib\SPIMemory -l .\lib\FastCRC
-  -l .\lib\RobustFlashIndexes -l .\lib\RotatingSamples
-  -O "build_flags = -DDIGI_TESTING -DDIGI_DEBUG" -O "targets=upload"
+pio ci .\test\SetSampleData --board=zeroUSB -l ..\BaroUtils -l ..\BaroSample
+  -l ..\SPIMemory -l ..\FastCRC -l ..\RobustFlashIndexes -l ..\RotatingSamples
+  -O "build_flags = -DDIGI_DEBUG" -O "targets=upload"
 */
 
 /*
@@ -17,40 +16,21 @@ SetDataSample starting...
 flash initialized...
 Usable number of rotating samples = 2816
 RotatingSamples::begin()
-rotating sample addr start = 1073152
+rotating sample addr start = 1671168
+rotating samples sector length = 12
 max number of rotating samples = 3072
-RobustFlashIndexes::begin()
-nb_sector:          3
-nb_indexes:         3072
-indexes_start[0]:   1048576
-indexes_start[1]:   1060864
-RobustFlashIndexes::RetrieveLastIndex()
-Indexes not initialized.
-RobustFlashIndexes::InitializeMemory()
-Starting to erase sectors... Done.
-current index = 0
----- END ---- RobustFlashIndexes::begin()
+usable number of rotating samples = 2816
 Rotating sample current index = 0
-kRobustIndexesSectorStart =256
-kRingSamplesSectorStart = 262
-Increment : indexes not initialized yet, starting at index = 0
-RobustFlashIndexes entering new sector for index = 0
-Double write(1) : addr1=1048576 / addr2=1060864
-RotatingSamples::AddSample entering new sector : Sector seems already
-initialized.
-Increment : new index = 1
-Double write(2) : addr1=1048580 / addr2=1060868
-
-Increment : new index = 1727
-Double write(1728) : addr1=1055484 / addr2=1067772
-Rotating sample new index = 1727
+kRobustIndexesSectorStart =4
+kRingSamplesSectorStart = 10
+Rotating sample new index = 1627
 */
 
 // On board SPI Flash Memory
 SPIFlash flash(kMiniUltraProOnBoardChipSelectPin);
 
 // Hour twelthes log to flash
-RotatingSamples rotating_samples(flash);
+RotatingSamples rotating_samples(flash, 384+18);
 
 void setup() {
   Serial.begin(115200);

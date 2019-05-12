@@ -112,7 +112,6 @@ void setup() {
     PRINT(" / weekly_count=");
     PRINTLN(weekly_count);
   }
-
 }
 
 void loop() {}

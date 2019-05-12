@@ -39,10 +39,9 @@ uint32_t DisplaySamples::Fill(RotatingSamples *src, uint32_t now,
 
   if (last_ts > now) {
     // we need to skip the sample in flash that are considered in the future!
-    DEBUG("Flash timestamp is in the future!");
+    // DEBUG("Flash timestamp is in the future!");
     while (sample_ts > now) {
       flash_index = src->GetPreviousIndex();
-      // DEBUG("new index", flash_index);
       if (flash_index == kInvalidInt24) {
         DEBUG(
             "Reached end of buffer before finding a sample more recent than "
@@ -81,12 +80,12 @@ uint32_t DisplaySamples::Fill(RotatingSamples *src, uint32_t now,
         // the buffer will thus contain deciPa (rather than Pa)!
         data = (int16_t)(sample.GetPressure() / 10);
     }
-    PRINT("buffer_index=");
-    PRINT(buffer_index);
-    PRINT(" <-- data=");
-    PRINT(data);
-    PRINT(" | ts=");
-    PRINTLN(sample_ts);
+    // PRINT("buffer_index=");
+    // PRINT(buffer_index);
+    // PRINT(" <-- data=");
+    // PRINT(data);
+    // PRINT(" | ts=");
+    // PRINTLN(sample_ts);
     buffer_[buffer_index] = data;
     count++;
     if (data > max_) max_ = data;
