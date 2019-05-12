@@ -74,6 +74,10 @@ class BaroSample {
     @param pressure     compensated pressure in Pa
     @param temperature  compensated temperature in hundreth of degrees
     @param humidity     relative humidity in hundreth of percent
+
+    The units of the input parameters match the units used by the
+    BME280 sensor. However, internally, different units are used
+    to optimize the data structure size.
   */
   BaroSample(uint32_t seconds, uint32_t pressure, int32_t temperature,
              uint32_t humidity, int8_t tz = 0, uint8_t extra = 0) {
@@ -129,27 +133,39 @@ class BaroSample {
 
   uint32_t GetTimecount() { return hour_twelfth_; }
 
-  /*
-    Set the pressure
-    @param pressure   compensated pressure in millibars
+  /**
+   * Set the pressure
+   * @param pressure    compensated pressure in millibars
   */
   bool SetPressureMilliBar(float pressure) {
     return SetPressure((uint32_t)(pressure * 100.0));
   }
+
+  /**
+   * Set the temperature
+   * @param temperature   temperature in degrees celcius 
+   */
   bool SetTemeratureDegCelcius(float temperature) {
     return SetTemperature((int32_t)(temperature * 100.0));
   }
 
+  /** 
+   * Set the humidity
+   * @param humidity      relative humidity as a percentage (0..1)
+   */
   bool SetHumidityPercent(float humidity) {
     return SetHumidity((uint32_t)(humidity * 100.0));
   }
 
+  /** Returns the pressure in Pa. */
   uint32_t GetPressure() {
     return kPressureOffsetPa + (uint32_t)(pressure_pa_off_);
   }
 
+  /** Returns the temperature in hundreds of degree celcius. */
   int32_t GetTemperature() { return (int32_t)(temperature_centi_deg_); }
 
+  /** Return the humidity in hundreds of percent. */
   uint32_t GetHumidity() { return (uint32_t)(humidity_deci_percent_)*10; }
 
   float PressureMilliBar() {
