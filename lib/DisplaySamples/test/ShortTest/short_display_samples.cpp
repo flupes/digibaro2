@@ -85,7 +85,7 @@ void setup() {
   daily_count = daily_buffer.Fill(&rotating_samples, last_ts, HUMIDITY);
   daily_buffer.Print();
   weekly_count = weekly_buffer.Fill(&rotating_samples, last_ts, HUMIDITY);
-  daily_buffer.Print();
+  weekly_buffer.Print();
   if (daily_count == 4 && weekly_count == 4) {
     PRINTLN("--------> PASS (samples added == 4)");
   } else {
@@ -95,14 +95,44 @@ void setup() {
     PRINTLN(weekly_count);
   }
 
+  PRINTLN("<======== Appending data to the display buffer");
+  size_t errors = 0;
+  for (size_t i = 0; i < 2; i++) {
+    BaroSample s(ts, kPressureOffsetPa, 0, humidity);
+    daily_buffer.AppendData(s);
+    humidity += 10;
+    ts += kSamplesPeriod;
+  }
+  int16_t result1[] = {-32768, 210, 220, 230, 240, 250};
+  for (int i=0; i<6; i++) {
+    if (daily_buffer.Data(i) != result1[i]) errors++;
+  }
+  daily_buffer.Print();
+  ts += 2 * kSamplesPeriod;
+  humidity += 20;
+  BaroSample s(ts, kPressureOffsetPa, 0, humidity);
+  daily_buffer.AppendData(s);
+  int16_t result2[] = {230, 240, 250, -32768, -32768, 280};
+  for (int i = 0; i < 6; i++) {
+    if (daily_buffer.Data(i) != result2[i]) errors++;
+  }
+  daily_buffer.Print();
+  if ( errors == 0 ) {
+    PRINTLN("--------> PASS (errors == 0)");
+  }
+  else {
+    PRINT("********> FAILED : errors=");
+    PRINTLN(errors);
+  }
+
   PRINTLN(
       "<======== Filling buffer with reference time more recent than last "
       "sample on flash");
   daily_count =
-      daily_buffer.Fill(&rotating_samples, ts + 2 * kSamplesPeriod, HUMIDITY);
+      daily_buffer.Fill(&rotating_samples, start_ts + 2 * kSamplesPeriod, HUMIDITY);
   daily_buffer.Print();
   weekly_count =
-      weekly_buffer.Fill(&rotating_samples, ts + 6 * kSamplesPeriod, HUMIDITY);
+      weekly_buffer.Fill(&rotating_samples, start_ts + 6 * kSamplesPeriod, HUMIDITY);
   weekly_buffer.Print();
   if (daily_count == 3 && weekly_count == 3) {
     PRINTLN("--------> PASS (samples added == 3)");

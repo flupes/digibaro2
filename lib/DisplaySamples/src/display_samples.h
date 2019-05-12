@@ -25,12 +25,7 @@ class DisplaySamples {
   uint32_t Fill(RotatingSamples *src, uint32_t now,
                  SampleDataType data_type = PRESSURE);
 
-  /** Returns the index of the first element of the buffer. */
-  uint32_t StartIndex() { return first_; }
-
-  /** Return the index of the last element of the buffer (still valid). */
-  uint32_t LastIndex() { return last_; }
-
+/*
   uint32_t IndexOffset(int32_t reference, int32_t offset) {
     // reference can be signed (we do not need the last bit for indexes)
     // We want to minimize checks: the caller should not provide and offset
@@ -54,8 +49,8 @@ class DisplaySamples {
     }
     return 0xFFFF;
   }
-
-  // uint32_t AppendData(BaroSample s);
+*/
+  void AppendData(BaroSample &sample);
 
   int16_t SerieMin() { return min_; }
 
@@ -63,19 +58,21 @@ class DisplaySamples {
 
   uint32_t size() { return size_; }
 
+  int16_t Data(int16_t index);
+
   void Print();
 
  private:
-  // uint32_t AppendData(int16_t data, uint32_t ts);
+  void AppendData(int16_t data, uint32_t ts);
 
   uint32_t period_;   // in second
   uint32_t size_;
-  uint32_t first_;
-  uint32_t last_;
+  uint32_t last_ts_;
   SampleDataType type_;
   int16_t buffer_[kGraphPxLength];
   int16_t min_;
   int16_t max_;
+  int16_t first_;
 };
 
 #endif
