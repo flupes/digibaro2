@@ -39,14 +39,25 @@ uint32_t RobustFlashIndexes::begin(SPIFlash *flash) {
   current_counter_ = GetCurrentCounter();
 
   PRINT("current index = ");
-  PRINTLN(current_index_);
+  PRINT(current_index_);
+  PRINT(" / current_counter = ");
+  PRINTLN(current_counter_);
   return current_index_;
 }
 
 uint32_t RobustFlashIndexes::GetCounterAt(uint32_t index) {
+  // Serial.print("RobustFlashIndexes::GetCounterAt(");
+  // Serial.print(index);
+  // Serial.println(")"); 
   if (empty_) return kInvalidInt24;
-  uint32_t offset = current_index_ * kRobustIndexSize;
-  return ReadCheckInt24(indexes_start_[0] + offset, indexes_start_[1] + offset);
+  uint32_t offset = index * kRobustIndexSize;
+  uint32_t counter =
+      ReadCheckInt24(indexes_start_[0] + offset, indexes_start_[1] + offset);
+  // Serial.print("--> [offset=");
+  // Serial.print(offset);
+  // Serial.print("] counter=");
+  // Serial.println(counter);
+  return counter;
 }
 
 uint32_t RobustFlashIndexes::RetrieveLastIndex() {
@@ -218,10 +229,15 @@ bool RobustFlashIndexes::InitializeMemory() {
 uint32_t RobustFlashIndexes::ReadCheckInt24(uint32_t addr1, uint32_t addr2) {
   uint32_t first = flash_->readLong(addr1, false);
   uint32_t second = flash_->readLong(addr2, false);
+  if ( first == 0xFFFFFFFF && second == 0xFFFFFFFF) {
+    // Flash is uninitialized at this index
+    return kInvalidInt24;
+  }
   bool first_crc = Int24Crc8::Check(first);
   bool second_crc = Int24Crc8::Check(second);
   if (!first_crc && !second_crc) {
     PRINTLN("Both indexes CRC are wrong (cannot thrust either value)!");
+    Serial.println("both crc wrong!");
     return kInvalidInt24;
   }
   if (!first_crc) {
@@ -242,12 +258,12 @@ uint32_t RobustFlashIndexes::ReadCheckInt24(uint32_t addr1, uint32_t addr2) {
 bool RobustFlashIndexes::DoubleWriteInt24(uint32_t value, uint32_t addr1,
                                           uint32_t addr2) {
   uint32_t code = Int24Crc8::Create(value);
-    PRINT("Double write(");
-    PRINT(value);
-    PRINT(") : addr1=");
-    PRINT(addr1);
-    PRINT(" / addr2=");
-    PRINTLN(addr2);
+  PRINT("Double write(");
+  PRINT(value);
+  PRINT(") : addr1=");
+  PRINT(addr1);
+  PRINT(" / addr2=");
+  PRINTLN(addr2);
   if (flash_->writeLong(addr1, code, true)) {
     if (flash_->writeLong(addr2, code, true)) {
       return true;
