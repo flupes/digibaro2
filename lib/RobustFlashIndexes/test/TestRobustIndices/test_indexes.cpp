@@ -2,12 +2,14 @@
     Test the RobustIndexes system
 */
 
-// compile with:
-// pio ci .\test\TestRobustIndices --board=zeroUSB -l src -l ..\FastCRC
-// -l ..\SPIMemory -O "targets=upload"
-
-// monitor with:
-// pio device monitor --port COM5 --baud 115200
+/*
+compile with:
+  pio ci .\test\TestRobustIndices -b zeroUSB -l src -l ..\FastCRC
+    -l ..\SPIMemory -l ..\BaroUtils -O "targets=upload"
+    -O "build_flags = -DRBI_DEBUG"
+monitor with:
+  pio device monitor --port COM5 --baud 115200
+*/
 
 #include <Arduino.h>
 
@@ -16,8 +18,6 @@
 #endif
 
 #include <SPIFlash.h>
-
-#define RBI_DEBUG
 
 #include "robust_flash_indexes.h"
 
@@ -79,7 +79,7 @@ void setup() {
   indices.begin(&flash);
   Serial.println("Done.");
 
-  Serial.print("Nunmber of usable indexes = ");
+  Serial.print("Number of usable indexes = ");
   Serial.println(indices.NumberOfUsableIndexes());
 
   indices.PrintStatus();
