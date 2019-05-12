@@ -24,7 +24,7 @@ uint32_t RotatingSamples::begin() {
   PRINTLN("RotatingSamples::begin()");
   PRINT("rotating sample addr start = ");
   PRINTLN(samples_addr_start_);
-  PRINT("rotating samples sector lengths = ");
+  PRINT("rotating samples sector length = ");
   PRINTLN(ring_sectors_length_);
   PRINT("max number of rotating samples = ");
   PRINTLN(max_samples_);
