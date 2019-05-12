@@ -13,4 +13,8 @@
 #define PRINTLN(x) \
   if (Serial) Serial.println(x);
 
+void DEBUG(const char *s);
+
+void DEBUG(const char *s, int32_t x);
+
 #endif
