@@ -1,5 +1,7 @@
 #include "rotating_samples.h"
 
+#include "baro_sample.h"
+
 #ifdef DIGI_DEBUG
 #include "print_utils.h"
 #else
@@ -7,21 +9,34 @@
 #define PRINTLN(x)
 #endif
 
-RotatingSamples::RotatingSamples(SPIFlash& flash, uint32_t indexes_start)
-    : flash_(flash), indexes_(indexes_start, kRobustIndexesSectorLength) {
-  samples_addr_start_ = KB(4) * (indexes_start + kRobustIndexesSectorLength);
-  max_samples_ = kRingSamplesSectorLength * KB(4) / kRingSampleByteLength;
-  usable_samples_ =
-      (kRingSamplesSectorLength - 1) * KB(4) / kRingSampleByteLength;
+RotatingSamples::RotatingSamples(SPIFlash& flash, uint32_t indexes_start,
+                                 uint32_t robust_indices_sector_length)
+    : flash_(flash), indexes_(indexes_start, robust_indices_sector_length) {
+  samples_addr_start_ =
+      KB(4) * (indexes_start + indexes_.GetAllocatedSectors());
+  ring_sectors_length_ = (kRingSampleByteLength / kRobustIndexByteLength) *
+                         (indexes_.GetAllocatedSectors() / 2);
+  max_samples_ = ring_sectors_length_ * KB(4) / kRingSampleByteLength;
+  usable_samples_ = (ring_sectors_length_ - 1) * KB(4) / kRingSampleByteLength;
 }
 
 uint32_t RotatingSamples::begin() {
   PRINTLN("RotatingSamples::begin()");
   PRINT("rotating sample addr start = ");
   PRINTLN(samples_addr_start_);
+  PRINT("rotating samples sector lengths = ");
+  PRINTLN(ring_sectors_length_);
   PRINT("max number of rotating samples = ");
   PRINTLN(max_samples_);
+  PRINT("usable number of rotating samples = ");
+  PRINTLN(usable_samples_);
   return indexes_.begin(&flash_);
+}
+
+uint32_t RotatingSamples::GetSectorStart() { return indexes_.GetFirstSector(); }
+
+uint32_t RotatingSamples::GetSectorsLength() {
+  return indexes_.GetAllocatedSectors() + ring_sectors_length_;
 }
 
 uint32_t RotatingSamples::GetTotalNumberOfSamples() { return max_samples_; }
@@ -39,13 +54,21 @@ uint32_t RotatingSamples::GetReverseIndexIterator() {
 
 uint32_t RotatingSamples::GetPreviousIndex() {
   uint32_t current_counter = indexes_.GetCounterAt(rev_index_iterator_);
+  // Serial.print("current_counter=");
+  // Serial.print(current_counter);
+  // Serial.print(" / rev_index_iterator_=");
+  // Serial.println(rev_index_iterator_);
   if (rev_index_iterator_ > 0) {
     rev_index_iterator_--;
   } else {
     rev_index_iterator_ = max_samples_ - 1;
   }
   uint32_t prev_counter = indexes_.GetCounterAt(rev_index_iterator_);
-  if (prev_counter == kInvalidInt24) {
+  // Serial.print("new rev_index_iterator_=");
+  // Serial.print(rev_index_iterator_);
+  // Serial.print(" / prev_counter=");
+  // Serial.println(prev_counter);
+  if (prev_counter == kInvalidInt24 || prev_counter == 0xFFFFFFFF) {
     rev_index_iterator_ = kInvalidInt24;
   } else {
     if (prev_counter > current_counter) {
@@ -59,6 +82,9 @@ uint32_t RotatingSamples::GetIndexIterator(uint32_t length) {
   iterator_end_ = true;
 
   last_index_iterator_ = GetLastSampleIndex();
+  if ( length == 0) {
+    length = usable_samples_;
+  }
   // Serial.print("GetFirstIndexOfSerie(");
   // Serial.print(length);
   // Serial.print(") : last=");
@@ -81,6 +107,7 @@ uint32_t RotatingSamples::GetIndexIterator(uint32_t length) {
   iterator_end_ = false;
   return current_index_iterator_;
 }
+
 uint32_t RotatingSamples::GetNextIndex() {
   if (iterator_end_) return kInvalidInt24;
   current_index_iterator_++;
@@ -116,8 +143,8 @@ uint32_t RotatingSamples::AddSample(BaroSample& sample) {
     if (code != 0xFFFFFFFF) {
       // PRINTLN("Need to erase first.");
       if (!flash_.eraseSector(addr)) {
-        PRINT("Error erasing sector starting at addr = ");
-        PRINTLN(addr);
+        // PRINT("Error erasing sector starting at addr = ");
+        // PRINTLN(addr);
       }
     } else {
       // PRINTLN("Sector seems already initialized.");

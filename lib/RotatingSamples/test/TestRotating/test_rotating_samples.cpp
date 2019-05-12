@@ -4,12 +4,15 @@
 #define Serial SERIAL_PORT_USBVIRTUAL
 #endif
 
-// compile with:
-// pio ci .\test --board=zeroUSB -l src -l ..\BaroUtils -l ..\BaroSample
-//  -l ..\RobustFlashIndexes -l ..\FastCRC -l ../SPIMemory -O "targets=upload"
+/*
+compile with:
+  pio ci .\test\TestRotating -b zeroUSB -l src -l ..\BaroUtils -l ..\BaroSample
+    -l ..\RobustFlashIndexes -l ..\FastCRC -l ..\SPIMemory
+    -O "targets=upload"
 
-// monitor with:
-// pio device monitor --port COM5 --baud 115200
+monitor with:
+  pio device monitor --port COM5 --baud 115200
+*/
 
 #include "baro_sample.h"
 #include "rotating_samples.h"
@@ -20,7 +23,7 @@ const size_t kMaxSamples = 1000;
 #define SKIP_ERASE
 
 SPIFlash flash(kMiniUltraProOnBoardChipSelectPin);
-RotatingSamples samples_ring(flash);
+RotatingSamples samples_ring(flash, 256+18);
 
 void setup() {
   Serial.begin(115200);
@@ -36,10 +39,13 @@ void setup() {
   }
 
 #if !defined(SKIP_ERASE)
-  uint32_t end_ring_buffer = kPermanentSamplesSectorStart * KB(4) - 1;
-  Serial.print("Erasing both robust indexes and ring buffer up to addr = ");
-  Serial.print(end_ring_buffer);
-  flash.eraseSection(0, end_ring_buffer);
+  uint32_t start_ring_buffer = samples_ring.GetSectorStart();
+  uint32_t length_ring_buffer = samples_ring.GetSectorsLength();
+  Serial.print("Erasing both robust indexes and ring buffer from addr = ");
+  Serial.print(start_ring_buffer);
+  Serial.print(" with data size = ");
+  Serial.print(length_ring_buffer);
+  flash.eraseSection(KB(4)*start_ring_buffer, KB(4)*length_ring_buffer);
   Serial.println(" | Done.");
 #endif
 
