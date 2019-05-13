@@ -64,6 +64,8 @@ uint32_t DisplaySamples::Fill(RotatingSamples *src, uint32_t now,
           // the buffer will thus contain deciPa (rather than Pa)!
           data = (int16_t)(sample.GetPressure() / 10);
       }
+      if (data < min_) min_ = data;
+      if (data > max_) max_ = data;
 
       // Bucket to place the data
       current_index = size_ - (last_ts_ - sample_ts) / period_ - 1;
@@ -103,7 +105,7 @@ uint32_t DisplaySamples::Fill(RotatingSamples *src, uint32_t now,
 
     if (sample_ts < first_ts) done = true;
   }
-  if ( current_index < size_ ) {
+  if (current_index < size_) {
     // Need to take care of the last sample
     buffer_[current_index] = accumulator / bucket_count;
     count++;
@@ -134,10 +136,10 @@ void DisplaySamples::AppendData(BaroSample &sample) {
 }
 
 void DisplaySamples::AppendData(int16_t data, uint32_t ts) {
-  uint32_t skip = (ts - last_ts_) / period_ - 1;
+  size_t skip = (ts - last_ts_) / period_ - 1;
   if (skip > size_) skip = size_;
-  uint32_t index = first_ + size_;
-  for (uint32_t i = 0; i < skip; i++) {
+  size_t index = first_ + size_;
+  for (size_t i = 0; i < skip; i++) {
     if (index >= size_) index -= size_;
     buffer_[index++] = INT16_MIN;
     first_++;
@@ -147,6 +149,18 @@ void DisplaySamples::AppendData(int16_t data, uint32_t ts) {
   first_++;
   if ((uint16_t)first_ >= size_) first_ -= size_;
   last_ts_ = ts;
+
+  // Search again for limits (since we discarded a bunch of values, we have
+  // to parse the full buffer again).
+  min_ = INT16_MAX - 1;
+  max_ = INT16_MIN + 1;
+  for (size_t i = 0; i < size_; i++) {
+    data = buffer_[i];
+    if (data != INT16_MIN) {
+      if (data < min_) min_ = data;
+      if (data > max_) max_ = data;
+    }
+  }
 }
 
 int16_t DisplaySamples::Data(int16_t index) {
