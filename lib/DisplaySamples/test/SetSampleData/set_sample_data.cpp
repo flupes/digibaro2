@@ -4,11 +4,10 @@
 #include "print_utils.h"
 #include "rotating_samples.h"
 
-
 /* Compile with:
 pio ci .\test\SetSampleData --board=zeroUSB -l ..\BaroUtils -l ..\BaroSample
   -l ..\SPIMemory -l ..\FastCRC -l ..\RobustFlashIndexes -l ..\RotatingSamples
-  -O "build_flags = -DDIGI_DEBUG" -O "targets=upload"
+  -l ..\Adafruit-GFX-Library -O "build_flags = -DDIGI_DEBUG" -O "targets=upload"
 */
 
 /*
@@ -30,7 +29,7 @@ Rotating sample new index = 1627
 SPIFlash flash(kMiniUltraProOnBoardChipSelectPin);
 
 // Hour twelthes log to flash
-RotatingSamples rotating_samples(flash, 384+18);
+RotatingSamples rotating_samples(flash, 404);
 
 void setup() {
   Serial.begin(115200);

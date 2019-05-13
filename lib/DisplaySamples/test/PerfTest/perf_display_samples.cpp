@@ -4,17 +4,21 @@
 #include "display_samples.h"
 #include "print_utils.h"
 
+// PIO stupidity again: does not resolve the library, even when specified on
+// command line!
+#include "Adafruit_GFX.h"
+
 /* Compile with:
 pio ci .\test\PerfTest --board=zeroUSB -l src -l ..\BaroUtils -l ..\BaroSample
   -l ..\SPIMemory -l ..\FastCRC -l ..\RobustFlashIndexes -l ..\RotatingSamples
-  -O "targets=upload"
+  -l ..\Adafruit-GFX-Library -O "targets=upload"
 */
 
 // On board SPI Flash Memory
 SPIFlash flash(kMiniUltraProOnBoardChipSelectPin);
 
 // Hour twelthes samples on flash
-RotatingSamples rotating_samples(flash, 384 + 18);
+RotatingSamples rotating_samples(flash,404);
 
 // Two buffers with different periods
 DisplaySamples daily_buffer(5 * 60);
