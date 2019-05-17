@@ -7,7 +7,7 @@
 /* Compile with:
 pio ci .\test\SetSampleData --board=zeroUSB -l ..\BaroUtils -l ..\BaroSample
   -l ..\SPIMemory -l ..\FastCRC -l ..\RobustFlashIndexes -l ..\RotatingSamples
-  -l ..\Adafruit-GFX-Library -O "build_flags = -DDIGI_DEBUG" -O "targets=upload"
+  -O "build_flags = -DDIGI_DEBUG" -O "targets=upload"
 */
 
 /*

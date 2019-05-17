@@ -5,7 +5,7 @@
 #define COLORED 0
 #define UNCOLORED 1
 
-// #define USE_LINE
+#define USE_LINE
 
 bool GraphSamples::Draw(GFXcanvas1 &canvas) {
   canvas.fillScreen(UNCOLORED);

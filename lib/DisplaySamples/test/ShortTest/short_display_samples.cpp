@@ -4,14 +4,10 @@
 #include "print_utils.h"
 #include "rotating_samples.h"
 
-// PIO stupidity again: does not resolve the library, even when specified on
-// command line!
-#include "Adafruit_GFX.h"
-
 /* Compile with:
 pio ci .\test\ShortTest --board=zeroUSB -l src -l ..\BaroUtils -l ..\BaroSample
   -l ..\SPIMemory -l ..\FastCRC -l ..\RobustFlashIndexes -l ..\RotatingSamples
-  -l ..\Adafruit-GFX-Library -O "build_flags = -DDIGI_DEBUG" -O "targets=upload"
+  -O "build_flags = -DDIGI_DEBUG" -O "targets=upload"
 */
 
 const uint32_t kStartTestSector = 384;

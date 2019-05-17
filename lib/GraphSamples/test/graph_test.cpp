@@ -11,11 +11,11 @@
 #include "print_utils.h"
 #include "rotating_samples.h"
 
-
 /* Compile with:
-pio ci .\test\GraphTest --board=zeroUSB -l src -l ..\BaroUtils -l ..\BaroSample
-  -l ..\RTClib -l ..\RotatingSamples -l ..\RobustFlashIndexes
-  -l ..\SPIMemory -l ..\FastCRC  -l ..\Adafruit-GFX-Library -l ..\epd42
+pio ci .\test --board=zeroUSB -l src -l ..\BaroUtils -l ..\BaroSample
+  -l ..\RotatingSamples -l ..\RobustFlashIndexes -l ..\DisplaySamples
+  -l ..\RTClib  -l ..\SPIMemory -l ..\FastCRC  
+  -l ..\Adafruit-GFX-Library -l ..\epd42
   -O "build_flags = -DDIGI_TESTING -DDIGI_DEBUG" -O "targets=upload"
 */
 
