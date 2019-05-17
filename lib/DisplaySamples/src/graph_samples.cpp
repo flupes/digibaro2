@@ -5,12 +5,14 @@
 #define COLORED 0
 #define UNCOLORED 1
 
-bool GraphSamples::Draw(GFXcanvas1 &canvas)
-{
+// #define USE_LINE
+
+bool GraphSamples::Draw(GFXcanvas1 &canvas) {
   canvas.fillScreen(UNCOLORED);
   int16_t y1 = 0;
   for (size_t i = 0; i < size_; i++) {
     int16_t data = Data(i);
+#ifdef USE_LINE
     int16_t y2 = 300 - 300 * (data - min_) / (max_ - min_);
     if (y1 != 0 && data != INT16_MIN) {
       if (y1 < y2) {
@@ -24,5 +26,11 @@ bool GraphSamples::Draw(GFXcanvas1 &canvas)
     } else {
       y1 = y2;
     }
+#else
+    if (data != INT16_MIN) {
+      int16_t y = 300 - 300 * (data - min_) / (max_ - min_);
+      canvas.drawFastVLine(i + 50, y, 300, COLORED);
+    }
+#endif
   }
 }
