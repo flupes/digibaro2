@@ -1,22 +1,21 @@
 /**
  * Adapted from:
- * 
+ *
  * Nice Numbers for Graph Labels
  * by Paul Heckbert
  * from "Graphics Gems", Academic Press, 1990
  */
 
-#include <math.h>
 #include "labels.h"
+#include <math.h>
 
 /*
  * nicenum: find a "nice" number approximately equal to x.
  * Round the number if round=1, take ceiling if round=0
  */
 
-float nicenum(float x, bool round)
-{
-  int expv;  /* exponent of x */
+float nicenum(float x, bool round) {
+  int expv; /* exponent of x */
   float f;  /* fractional part of x */
   float nf; /* nice, rounded fraction */
 
@@ -53,4 +52,6 @@ void loose_label(float min, float max, int nb_ticks, label_spec &result) {
   result.increment = nicenum(range / (nb_ticks - 1), true);
   result.min_label = floorf(min / result.increment) * result.increment;
   result.max_label = ceilf(max / result.increment) * result.increment;
+  result.nb_marks =
+      (result.max_label - result.min_label) / result.increment + 1 ;
 }
