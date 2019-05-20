@@ -48,6 +48,8 @@
 // Let a chance to the user to connect to the serial port
 // #define WAIT_FOR_SERIAL
 
+// #define USE_SWITCH
+
 // Comment out to disable the display
 #define USE_DISPLAY
 
@@ -86,15 +88,17 @@ RTC_DS3231 ds3231_rtc;
 // Pins 7, 8, 9 and 10 are reserved for the ePaper display
 // Pin 13 is built-in LED
 // Pins 20 and 21 are primary I2C bus
-// Pint 22, 23 and 24 are primary SPI bus
+// Pins 22, 23 and 24 are primary SPI bus
 
 // Somehow, configuring either pin 32 or 33 in INPUT-PULLUP breaks the
 // I2C communication with the external RTC !!!
 
-uint8_t unused_pins[] = {0,  1,  2,  3,  5,  7,  8,  9,  10, 11, 12, 14, 15, 16,
+uint8_t unused_pins[] = {0,  1,  3,  5,  7,  8,  9,  10, 11, 12, 14, 15, 16,
                          17, 18, 19, 25, 26, 34, 35, 36, 37, 38, 39, 40, 41};
 
 const uint8_t kRtcPowerPin = 6;
+
+bool switch_wakeup = false;
 
 extern "C" char *sbrk(int i);
 
@@ -103,9 +107,12 @@ int FreeRam() {
   return &stack_dummy - sbrk(0);
 }
 
-void alarmMatch() {
-  digitalWrite(LED_BUILTIN, HIGH);
+void alarmMatch() { onboard_rtc.detachInterrupt(); }
+
+void s1Change() {
+  detachInterrupt(2);
   onboard_rtc.detachInterrupt();
+  switch_wakeup = true;
 }
 
 void configureForSleep() {
@@ -127,9 +134,22 @@ void configureForSleep() {
   delay(100);
 #endif
 
+#ifdef USE_SWITCH
+  bool s1 = digitalRead(2);
+  if (s1) {
+    PRINTLN("switch currently HIGH");
+    attachInterrupt(2, s1Change, LOW);
+  } else {
+    PRINTLN("switch currently LOW")
+    attachInterrupt(2, s1Change, HIGH);
+  }
+  switch_wakeup = false;
+#endif
+
   onboard_rtc.setAlarmSeconds(alarm_seconds);
   onboard_rtc.enableAlarm(onboard_rtc.MATCH_SS);
   onboard_rtc.attachInterrupt(alarmMatch);
+
   digitalWrite(LED_BUILTIN, LOW);
   flash.powerDown();
   Wire.end();  // no direct effect on consumption, but it the I2C continues
@@ -137,6 +157,7 @@ void configureForSleep() {
 
   // pinMode(20, INPUT_PULLUP);
   // pinMode(21, INPUT_PULLUP);
+  // pinMode(12, INPUT_PULLUP);
 
   // SPI.end(); --> consume 80uA rather than 20uA if terminating SPI!
   digitalWrite(kRtcPowerPin, LOW);
@@ -171,6 +192,9 @@ void setup() {
   PRINTLN("Powering the external RTC");
   pinMode(kRtcPowerPin, OUTPUT);
   digitalWrite(kRtcPowerPin, HIGH);
+
+  // pinMode(12, INPUT_PULLDOWN);
+
   // spec sheet says the RTC needs 250ms to stabilize
   delay(300);
   ds3231_rtc.begin();
@@ -217,6 +241,13 @@ void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, HIGH);
 
+#ifdef USE_SWITCH
+  // switch pin
+  pinMode(2, INPUT);
+#else
+  pinMode(2, INPUT_PULLUP);
+#endif
+
 #ifdef USE_DISPLAY
   // Start display (need the kRtcPowerPin HIGH to be enabled)
   PRINTLN("Init e-Paper...");
@@ -255,6 +286,9 @@ void setup() {
 }
 
 void loop() {
+  // Show that we are awake
+  digitalWrite(LED_BUILTIN, HIGH);
+
   // Enable power to the external RTC and display
   digitalWrite(kRtcPowerPin, HIGH);
 
@@ -268,8 +302,8 @@ void loop() {
   }
   delay(3000);
 #else
-  // It looks like the e-Paper needs some time to power up?
-  // delay(1000);
+// It looks like the e-Paper needs some time to power up?
+// delay(1000);
 #endif
 
   PRINTLN("Just woke up!");
@@ -277,25 +311,27 @@ void loop() {
   // It looks like the SPI works automagically after waking up
   // SPI.begin();
   flash.powerUp();
- 
+
   // Wait at least 250ms for the RTC to get up to speed
   delay(300);
- 
+
   // It is necessary to re-enable the I2C bus (why?)
   Wire.begin();
 
-  DateTime utc = ds3231_rtc.now();
+#ifndef BARE_BOARD
   char buffer[64];
+  DateTime utc = ds3231_rtc.now();
   DateTime local = utc.getLocalTime(-8);
   local.toString(buffer);
-  PRINT("current time = ");
-  PRINTLN(buffer);
+
+// pinMode(12, INPUT_PULLDOWN);
 
 #ifdef USE_DISPLAY
   PRINTLN("Restart e-Paper...");
   if (epd.Init() != 0) {
     PRINTLN("e-Paper init failed");
-    while (1);
+    while (1)
+      ;
   }
 
   // Display something to prove we are alive
@@ -305,7 +341,7 @@ void loop() {
           local.day());
   canvas->setCursor(4, 60);
   canvas->print(buffer);
- 
+
   sprintf(buffer, "Time: %02d:%02d:%02d", local.hour(), local.minute(),
           local.second());
   canvas->setCursor(4, 120);
@@ -314,11 +350,27 @@ void loop() {
   epd.SetPartialWindow(canvas->getBuffer(), 0, 0, 400, 300);
   epd.DisplayFrame();
 #endif
+  PRINT("current time = ");
+  PRINTLN(buffer);
+#endif
+
+#ifdef USE_SWITCH
+  if (switch_wakeup) {
+    PRINTLN("was awakened from switch state change!");
+  }
+  uint8_t s1 = digitalRead(2);
+  PRINT("switch state: ");
+  PRINTLN(s1);
+#endif
 
   // Try to access SPI Flash, just to make sure it is working.
   uint32_t number = flash.readULong(kPermanentSamplesSectorStart * KB(4));
   PRINT("Read something from flash: ");
   PRINTLN(number);
+
+  // uint8_t dst = digitalRead(12);
+  // PRINT("DST switch position: ");
+  // PRINTLN(dst);
 
   // pretend we are active
   for (uint8_t i = 0; i < 10; i++) {
