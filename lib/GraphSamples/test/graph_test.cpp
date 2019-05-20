@@ -14,7 +14,7 @@
 /* Compile with:
 pio ci .\test --board=zeroUSB -l src -l ..\BaroUtils -l ..\BaroSample
   -l ..\RotatingSamples -l ..\RobustFlashIndexes -l ..\DisplaySamples
-  -l ..\RTClib  -l ..\SPIMemory -l ..\FastCRC  
+  -l ..\RTClib  -l ..\SPIMemory -l ..\FastCRC -l ..\Labels
   -l ..\Adafruit-GFX-Library -l ..\epd42
   -O "build_flags = -DDIGI_TESTING -DDIGI_DEBUG" -O "targets=upload"
 */
@@ -78,9 +78,27 @@ void setup() {
 }
 
 void loop() {
+  uint32_t start = millis();
+  uint32_t begining = start;
   daily_buffer.Draw(canvas);
+  uint32_t stop = millis();
+  PRINT("draw elapsed (ms) : ");
+  PRINTLN(stop - start);
+
+  start = millis();
   epd.SetPartialWindow(canvas.getBuffer(), 0, 0, 400, 300);
+  stop = millis();
+  PRINT("transfer elapsed (ms) : ");
+  PRINTLN(stop - start);
+
+  start = millis();
   epd.DisplayFrame();
+  stop = millis();
+  PRINT("refresh elapsed (ms) : ");
+  PRINTLN(stop - start);
+  PRINT("total display updated (ms) = ");
+  PRINTLN(stop-begining);
+  
   delay(1000 * 20);
   weekly_buffer.Draw(canvas);
   epd.SetPartialWindow(canvas.getBuffer(), 0, 0, 400, 300);
