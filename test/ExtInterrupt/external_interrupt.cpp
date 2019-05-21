@@ -1,9 +1,23 @@
 /*
+  Circuit:
+    Slide DPDT switch middle pin connected to input pin 2, outer pins connected 
+    to 3.3V and Ground.
+
+            3V3 -----o|
+                      |]
+    pin 2 <----------o|
+                  
+            GND -----o
+
   Compile with:
     pio ci ./test/ExtInterrupt -b zeroUSB -l lib/RTCZero -l lib/SPIMemory
       -O "targets=upload"
 */
 #include "RTCZero.h"
+#include "SPIMemory.h"
+
+// On board SPI Flash Memory
+SPIFlash flash(4);
 
 // SAMD onboard rtc
 RTCZero onboard_rtc;
@@ -16,9 +30,7 @@ uint8_t unused_pins[] = {0,  1,  3,  5,  6,  7,  8,  9,  10, 11, 12, 14,
 
 volatile bool switch_wakeup = false;
 
-void alarmMatch() {
-  switch_wakeup = false;
-}
+void alarmMatch() { switch_wakeup = false; }
 
 void s1Change() {
   // Somehow, detach interrupt does not work here (maybe not re-entrant?)
@@ -34,7 +46,7 @@ void s1Change() {
 }
 
 void configureForSleep() {
-  uint8_t alarm_seconds = onboard_rtc.getSeconds() + 20;
+  uint8_t alarm_seconds = onboard_rtc.getSeconds() + 15;
   if (alarm_seconds > 59) alarm_seconds -= 60;
   onboard_rtc.setAlarmSeconds(alarm_seconds);
   onboard_rtc.enableAlarm(onboard_rtc.MATCH_SS);
@@ -58,6 +70,10 @@ void setup() {
   onboard_rtc.setTime(10, 10, 01);
   onboard_rtc.setDate(19, 05, 19);
 
+  flash.begin();
+  // Flash seems to consume 16uA (if not powered down) when the board sleep!
+  flash.powerDown();
+
   // Configure all unused pins as input, enabled with built-in pullup
   for (uint8_t i = 0; i < sizeof(unused_pins); i++) {
     pinMode(unused_pins[i], INPUT_PULLUP);
@@ -73,6 +89,7 @@ void setup() {
 
   // Disable USB
   USBDevice.detach();
+
 }
 
 void loop() {
