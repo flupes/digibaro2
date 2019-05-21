@@ -8,15 +8,29 @@
 // SAMD onboard rtc
 RTCZero onboard_rtc;
 
+uint8_t wakeup_pin = 2;
+
 uint8_t unused_pins[] = {0,  1,  3,  5,  6,  7,  8,  9,  10, 11, 12, 14,
                          15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26,
                          32, 33, 34, 35, 36, 37, 38, 39, 40, 41};
 
-void alarmMatch() { onboard_rtc.detachInterrupt(); }
+volatile bool switch_wakeup = false;
+
+void alarmMatch() {
+  switch_wakeup = false;
+}
 
 void s1Change() {
-  detachInterrupt(2);
-  onboard_rtc.detachInterrupt();
+  // Somehow, detach interrupt does not work here (maybe not re-entrant?)
+  // detachInterrupt(wakeup_pin);
+
+  // We clear the interrupt manually (code from WInterrupts.c)
+  // Otherwise, this callback is constantly repeated since the
+  // switch stays in the same position...
+  EExt_Interrupts in = g_APinDescription[wakeup_pin].ulExtInt;
+  uint32_t inMask = 1 << in;
+  EIC->INTENCLR.reg = EIC_INTENCLR_EXTINT(inMask);
+  switch_wakeup = true;
 }
 
 void configureForSleep() {
@@ -25,14 +39,17 @@ void configureForSleep() {
   onboard_rtc.setAlarmSeconds(alarm_seconds);
   onboard_rtc.enableAlarm(onboard_rtc.MATCH_SS);
   onboard_rtc.attachInterrupt(alarmMatch);
-  
-  // CHANGE does not trigger anything!
-  // attachInterrupt(2, s1Change, CHANGE);
-  bool s1 = digitalRead(2);
+
+  // CHANGE does not trigger anything because in deep sleep mode the
+  // EIC clock is not avaible
+  // attachInterrupt(wakeup_pin, s1Change, CHANGE);
+
+  // Manually configure the interrupt to match the next state change
+  bool s1 = digitalRead(wakeup_pin);
   if (s1) {
-    attachInterrupt(2, s1Change, LOW);
+    attachInterrupt(wakeup_pin, s1Change, LOW);
   } else {
-    attachInterrupt(2, s1Change, HIGH);
+    attachInterrupt(wakeup_pin, s1Change, HIGH);
   }
 }
 
@@ -46,13 +63,13 @@ void setup() {
     pinMode(unused_pins[i], INPUT_PULLUP);
   }
   // switch pin (DPDT, so no pull up/down necessary)
-  pinMode(2, INPUT);
+  pinMode(wakeup_pin, INPUT);
 
   // Built in LED ON when awake
   pinMode(LED_BUILTIN, OUTPUT);
 
   // Let us a chance to reflash!
-  delay(10 * 1000);
+  delay(5 * 1000);
 
   // Disable USB
   USBDevice.detach();
@@ -66,5 +83,26 @@ void loop() {
 
   configureForSleep();
   digitalWrite(LED_BUILTIN, LOW);
+
+  // Go to deep sleep
   onboard_rtc.standbyMode();
+
+  onboard_rtc.detachInterrupt();
+  // Now we are awake, detach the external interrupt
+  // (not done inside the callback)
+  detachInterrupt(wakeup_pin);
+
+  if (switch_wakeup) {
+    for (uint8_t i = 0; i < 5; i++) {
+      digitalWrite(LED_BUILTIN, HIGH);
+      delay(50);
+      digitalWrite(LED_BUILTIN, LOW);
+      delay(100);
+    }
+  } else {
+    digitalWrite(LED_BUILTIN, HIGH);
+    delay(600);
+    digitalWrite(LED_BUILTIN, LOW);
+    delay(200);
+  }
 }
