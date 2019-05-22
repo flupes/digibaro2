@@ -1,6 +1,6 @@
 /*
   Circuit:
-    Slide DPDT switch middle pin connected to input pin 2, outer pins connected 
+    Slide SPDT switch middle pin connected to input pin 2, outer pins connected 
     to 3.3V and Ground.
 
             3V3 -----o|
@@ -78,7 +78,7 @@ void setup() {
   for (uint8_t i = 0; i < sizeof(unused_pins); i++) {
     pinMode(unused_pins[i], INPUT_PULLUP);
   }
-  // switch pin (DPDT, so no pull up/down necessary)
+  // switch pin (SPDT, so no pull up/down necessary)
   pinMode(wakeup_pin, INPUT);
 
   // Built in LED ON when awake
