@@ -31,6 +31,7 @@ Bme280Sensor bme(BME280_I2C_ADDR_SEC);
 PermanentSamples samples(flash);
 
 const int8_t kTimeZone = -8;
+const int16_t kAltitude = 220;
 
 void setup() {
   Serial.begin(115200);
@@ -54,7 +55,6 @@ void setup() {
       ;
   }
 
-
   PRINT("Start address of permanent sample = ");
   PRINTLN(samples.GetFirstSampleAddr());
   PRINT("Max number of samples = ");
@@ -68,7 +68,8 @@ void collect_sample(DateTime &dt) {
   bme.PerformMeasurement();
 
   BaroSample sample(dt.unixtime(), bme.GetPressure() / 100,
-                    bme.GetTemperature(), bme.GetHumidity() / 10);
+                    bme.GetTemperature(), bme.GetHumidity() / 10,
+                    kAltitude, kTimeZone);
 
   if (Serial) {
     char buffer[64];
@@ -83,7 +84,9 @@ void collect_sample(DateTime &dt) {
     Serial.print("  | humi = ");
     Serial.print(bme.GetHumidity());
     Serial.println();
-    Serial.print("--> sample created with seconds = ");
+    Serial.print("--> sample created at elevation = ");
+    Serial.print(kAltitude);
+    Serial.print(" with seconds = ");
     Serial.print(sample.GetTimestamp());
     Serial.print(" : press = ");
     Serial.print(sample.PressureMilliBar());
