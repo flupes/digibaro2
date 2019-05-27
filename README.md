@@ -20,7 +20,7 @@ change.
 
 ![Classical Barograph](https://upload.wikimedia.org/wikipedia/commons/a/a0/Barograph_-_Image_from_page_45_of_%22Practical_physics%22_%281922%29.jpg)
 
-The paper-electronic barographs aleviate this problem, but I remember ours that
+The paper-electronic barographs aleviate this problem, but I remember that ours
 was constantly jamming.
 
 Several electronic barograph already exist on the market, but they all require
@@ -35,21 +35,21 @@ connectivity would allow to also get a full detailed weather forecast, much more
 accurate, and covering a wider area, than what you could analyze yourself.
 
 Despite our ever more connected world, I am old fashioned and like to believe
-that having systems nor relying on data flowing wirelessly to your boat can be
+that having systems not relying on data flowing wirelessly to your boat can be
 useful. It turns out that the fundamental building block for such a project is
-readily available: several extremely accurate digital pressure sensors are can
-be sourced at low price (you may already have one in your cellphone).
+readily available: several extremely accurate digital pressure sensors can be
+sourced at low price (you may already have one in your cellphone).
 
-I also wanted to not be relying on an external source of power. This is not so
-much to avoid battery drained (the most basic solar panel would provide more
-than enough), but to avoid having extra wiring.
+I also wanted not to rely on an external source of power. This is not so much to
+avoid battery drain (the most basic solar panel would provide more than enough),
+but to avoid having extra wiring.
 
-The final concept is that you would be able to leave the barograph on your
-boat, and when coming back after six months, you would be able to read the
-barometric pressure of the last few days because the barograph would kept
-collecting data in permanence. Of course, this is probably superfluous since
-after leaving your boat six months, you probably have more than 5 days of work
-before taking the sea again (hence you could turn on the barograph).
+The final concept is that you would be able to leave the barograph on your boat,
+and when coming back after six months, you would be able to read the barometric
+pressure of the last few days because the barograph would keep collecting data.
+Of course, this is probably superfluous since after leaving your boat six
+months, you probably have more than 5 days of work before taking the sea again
+(hence you could turn on the barograph).
 
 At any rate, being a style exercise or a real need, the goal is to develop an
 extremly low power barograph that could sustain at least six months on a set of
