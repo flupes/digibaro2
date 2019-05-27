@@ -16,3 +16,6 @@
 [submodule "lib/Adafruit-GFX-Library"]
 	path = lib/Adafruit-GFX-Library
 	url = https://github.com/flupes/Adafruit-GFX-Library.git
+[submodule "lib/ArduinoLowPower"]
+	path = lib/ArduinoLowPower
+	url = https://github.com/flupes/ArduinoLowPower.git
