@@ -2,6 +2,12 @@
 
 Digital Barometer v2 (with e-Paper display).
 
+Status:
+- all supporting custom libraries are now written and include tests
+- main application *not* developed yet
+- schematic ready with preliminary board design
+- 3D enclosure concept (wood enclosure for next iteration)
+
 ## Goal
 
 Develop an open source digital barograph that does not require an external power
@@ -55,6 +61,18 @@ At any rate, being a style exercise or a real need, the goal is to develop an
 extremly low power barograph that could sustain at least six months on a set of
 typical AA alkaline batteries!
 
+There are few major difference between this project an my previous (never
+completed) digibaro v1:
+
+| Digibaro v1                 | Digibaro v2                   |
+|-----------------------------|-------------------------------|
+| Target low cost             | Cost is not the main priority |
+| Classic UI with 5 buttons   | Mimimalist UI (analog feel)   |
+| LCD screen                  | e-Paper display               |
+| Only stores 5 days of data  | Long term recording (>20years)|
+| Typical "maker" approach    | High reliability desired      |
+
+
 ## Hardware selection
 
 The [first version of my digibaro](https://github.com/flupes/digibaro/) was
@@ -88,7 +106,6 @@ look.
 - Retired
 - ~300 Euro
 
-
 [Aquatech DBX2](https://www.digitalbarograph.com/)
 - Require external power source
 - 20mA @ 5V DC (160mA with LED backlight)
@@ -110,3 +127,18 @@ look.
 - Very cool, however we had a similar model that jammed quite often.  
 - [Meteograf User Manual](http://www.barograph.ch/Downloads/BA_Meteograf_Englisch_2.4.pdf)  
 - ~$900 without case
+
+## Related projects
+
+In May 2019, I just discovered this: [Arduino + BMP085 Barograph from PauloDevelo on Arbatus](https://www.arbutus.ecogium.fr/the-boat/electronic-equipment/barograph-arbutus/).
+
+<!-- 
+Code at: https://github.com/PauloDevelo/Barograph/blob/master/src/barograph.ino
+
+This is similar to to what I started to develop with v1 of digibaro. However,
+PauloDevelo chose a much simpler route: it is again powered from the boat
+batteries (so not need for sleep mode), there is no RTC, no real concept of time
+series, no user interface per say. This allowed him to complete the project
+(unlike my digibaro v1). Congratulations! In addition, he created a nice wooden
+enclosure.
+-->
