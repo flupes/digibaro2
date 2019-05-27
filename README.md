@@ -82,22 +82,31 @@ look.
 
 ## Reference products
 
-http://www.bohlken.net/bg/bg1512_en.htm
-Require external power source
-Retired
-~300 Euro
+[Bohlken BG1512](http://www.bohlken.net/bg/bg1512_en.htm)
+- Require external power source
+- 10mA without backlight
+- Retired
+- ~300 Euro
 
-https://www.digitalbarograph.com/
-Require external power source
-Factory calibrated
-~$500
 
-https://www.celestaire.com/product-category/weather/meteograf-barograph/
-Paper recording - C type battery
-We had a similar model that jamed quite often.
-~$900 without case
+[Aquatech DBX2](https://www.digitalbarograph.com/)
+- Require external power source
+- 20mA @ 5V DC (160mA with LED backlight)
+- Storm alarm
+- Factory calibrated
+- [DBX2 User Manual](https://www.digitalbarograph.com/pdfs/DBX2_MANUAL_V1W.pdf)  
+- ~$500
 
-https://www.nasamarine.com/product/meteoman/
-Consumes 100mA (without backlight), require external source of power
-Pressure change graph
-~$200
+[NASA Meteoman](https://www.nasamarine.com/product/meteoman/)
+- Consumes 100mA (without backlight), require external source of power
+- Pressure change graph
+- [Meteoman screenshots and discussion](http://www.ybw.com/forums/showthread.php?452897-Calling-Weather-Experts-What-do-you-Need-in-a-Barograph)
+- ~$200
+
+[Raber Barograf](http://www.barograph.ch/Barograph_E/barograph.html)
+- Paper recording :-)
+- Swiss made ;-)
+- One single C type battery for a year!
+- Very cool, however we had a similar model that jammed quite often.  
+- [Meteograf User Manual](http://www.barograph.ch/Downloads/BA_Meteograf_Englisch_2.4.pdf)  
+- ~$900 without case
