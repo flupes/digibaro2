@@ -2,19 +2,17 @@
 #include "print_utils.h"
 
 bool BaroSample::operator==(BaroSample &s) {
-  if (timestamp_ != s.timestamp_ ) return false;
-  if (hour_twelfth_ != s.hour_twelfth_ ) return false;
-  if (pressure_pa_off_ != s.pressure_pa_off_ ) return false;
-  if (humidity_deci_percent_ != s.humidity_deci_percent_ ) return false;
-  if (temperature_centi_deg_ != s.temperature_centi_deg_ ) return false;
-  if (timezone_ != s.timezone_ ) return false;
-  if (reserved_ != s.reserved_ ) return false;
+  if (timestamp_ != s.timestamp_) return false;
+  if (hour_twelfth_ != s.hour_twelfth_) return false;
+  if (pressure_pa_off_ != s.pressure_pa_off_) return false;
+  if (humidity_deci_percent_ != s.humidity_deci_percent_) return false;
+  if (temperature_centi_deg_ != s.temperature_centi_deg_) return false;
+  if (timezone_ != s.timezone_) return false;
+  if (reserved_ != s.reserved_) return false;
   return true;
 }
 
-bool BaroSample::operator!=(BaroSample &s) {
-  return ! (*this == s);
-}
+bool BaroSample::operator!=(BaroSample &s) { return !(*this == s); }
 
 void BaroSample::PackSample(char *data) {
   uint16_t utemp = 0;
@@ -137,6 +135,17 @@ bool BaroSample::SetHumidity(uint32_t humidity) {
   }
   humidity_deci_percent_ = (uint16_t)(humidity / 10);
   return true;
+}
+
+uint32_t BaroSample::SeaLevelPressure(uint32_t station_pressure,
+                                      int16_t elevation, int16_t temperature) {
+  // See https://keisan.casio.com/exec/system/1224575267 for equation
+  float correction =
+      (1.0 -
+       0.0065 * (float)elevation /
+           ((float)temperature/100.0 + 0.0065 * (float)elevation + 273.15));
+  float factor = powf(correction, -5.257);
+  return (uint32_t)((float)station_pressure*factor);
 }
 
 void BaroSample::Print() {

@@ -22,7 +22,8 @@ void setup() {
   Serial.print("BaroSample size = ");
   Serial.println(sizeof(BaroSample));
 
-  // two buffers are not necessary for this test, but demonstrate the inteded usage
+  // two buffers are not necessary for this test, but demonstrate the inteded
+  // usage
   // with flash memory read / write.
   PackedBaroSample buffer_write, buffer_read;
 
@@ -46,11 +47,11 @@ void setup() {
   inn.Inspect(buffer_write);
   memcpy(buffer_read, buffer_write, kBaroPackedSampleSize);
   Serial.println();
- 
+
   BaroSample outn(buffer_read);
   outn.Print();
   outn.Inspect(buffer_read);
-  if ( (int32_t)(-8192) != outn.GetTemperature() ) {
+  if ((int32_t)(-8192) != outn.GetTemperature()) {
     Serial.println("not happy already!");
   }
 
@@ -102,6 +103,37 @@ void setup() {
     temperature += 16;
     humidity += 1;
   }
+
+  Serial.println("altitude correction tests");
+  uint32_t pressure_inputs[] = {96000, 97000, 98000, 99000, 100000, 101000};
+  // From https://barani.biz/apps/sea-level-pressure
+  uint32_t c_200m[] = {98299, 99323, 100347, 101370, 102395, 103419};
+  uint32_t c_1200m[] = {110472, 111622, 112773, 113924, 115075, 116225};
+  for (int i = 0; i < 6; i++) {
+    BaroSample s0(k2019epoch, pressure_inputs[i], 30 * 100, 50 * 100);
+    if (abs(pressure_inputs[i] - s0.GetPressure()) > 2) {
+      error_count++;
+    }
+    Serial.print("input=");
+    Serial.print(pressure_inputs[i]);
+    Serial.print(" (answer_200=");
+    Serial.print(c_200m[i]);
+    Serial.print(", answer_1200=");
+    Serial.print(c_1200m[i]);
+    BaroSample s200(k2019epoch, pressure_inputs[i], 15 * 100, 50 * 100, 200);
+    Serial.print(") --> result_200m=");
+    Serial.print(s200.GetPressure());
+    if (abs(c_200m[i] - s200.GetPressure()) > 2) {
+      error_count++;
+    }
+    BaroSample s1200(k2019epoch, pressure_inputs[i], 15 * 100, 50 * 100, 1200);
+    Serial.print(", result_1200m=");
+    Serial.println(s1200.GetPressure());
+    if (abs(c_1200m[i] - s1200.GetPressure()) > 2) {
+      error_count++;
+    }
+  }
+
   Serial.println();
   Serial.print("Error Count = ");
   Serial.println(error_count);

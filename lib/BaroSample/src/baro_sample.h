@@ -80,21 +80,26 @@ class BaroSample {
     to optimize the data structure size.
   */
   BaroSample(uint32_t seconds, uint32_t pressure, int32_t temperature,
-             uint32_t humidity, int8_t tz = 0, uint8_t extra = 0) {
-    Set(seconds, pressure, temperature, humidity, tz, extra);
+             uint32_t humidity, int16_t elevation = 0, int8_t tz = 0,
+             uint8_t extra = 0) {
+    Set(seconds, pressure, temperature, humidity, elevation, tz, extra);
   }
 
   /*
     Default constructor: build a dummy sample
     */
-  BaroSample() { Set(k2019epoch, 0, -8192, 0, 0, 0xFF); }
+  BaroSample() { Set(k2019epoch, 0, -8192, 0, 0, 0, 0xFF); }
 
   void Set(uint32_t seconds, uint32_t pressure, int32_t temperature,
-           uint32_t humidity, int8_t tz = 0, uint8_t extra = 0) {
+           uint32_t humidity, int16_t elevation = 0, int8_t tz = 0,
+           uint8_t extra = 0) {
     SetTimeStamp(seconds);
     SetPressure(pressure);
     SetTemperature(temperature);
     SetHumidity(humidity);
+    if (elevation != 0) {
+      SetElevation(elevation);
+    }
     timezone_ = tz;
     reserved_ = extra;
   }
@@ -129,6 +134,22 @@ class BaroSample {
 
   bool SetHumidity(uint32_t humidity);
 
+  /**
+   * Modify the internally stored barometric pressure to normalize it at mean
+   * sea level in function of the given elevation (in meters).
+  */
+  uint32_t SetElevation(int16_t elevation) {
+    SetPressure(
+        SeaLevelPressure(GetPressure(), elevation, temperature_centi_deg_));
+    return GetPressure();
+  }
+
+  /**
+   * Modify the internally stored barometric pressure with the given offset
+   * (in hPa).
+   */
+  uint32_t SetCalibration(int16_t pressure_calibration);
+
   uint32_t GetTimestamp() { return timestamp_; }
 
   uint32_t GetTimecount() { return hour_twelfth_; }
@@ -143,13 +164,13 @@ class BaroSample {
 
   /**
    * Set the temperature
-   * @param temperature   temperature in degrees celcius 
+   * @param temperature   temperature in degrees celcius
    */
   bool SetTemeratureDegCelcius(float temperature) {
     return SetTemperature((int32_t)(temperature * 100.0));
   }
 
-  /** 
+  /**
    * Set the humidity
    * @param humidity      relative humidity as a percentage (0..1)
    */
@@ -181,6 +202,13 @@ class BaroSample {
   void Print();
   void PrettyPrint();
   void Inspect(char *data);
+
+  /**
+   * Computes the mean sea level pressure (in hPa) from the given station
+   * pressure (in hPa), elevation (in meters) and temperature (1/100 degress)
+   */
+  static uint32_t SeaLevelPressure(uint32_t station_pressure, int16_t elevation,
+                                   int16_t temperature);
 
  private:
   uint32_t timestamp_;              // 4
