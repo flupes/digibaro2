@@ -1,0 +1,33 @@
+@startuml
+
+skinparam componentStyle uml2
+
+!include "colors.puml"
+
+class SPIFlash
+
+class RobustFlashIndexes
+
+class BaroSamples
+
+class RotatingSamples
+
+class DisplaySamples
+
+class GraphSamples
+
+class PermanentSamples
+
+RobustFlashIndexes o-- SPIFlash
+PermanentSamples o-- SPIFlash
+
+RotatingSamples -left- BaroSamples
+RotatingSamples o-- RobustFlashIndexes
+RotatingSamples ..> SPIFlash
+PermanentSamples -up- BaroSamples
+
+DisplaySamples o-- RotatingSamples
+
+GraphSamples --|> DisplaySamples
+
+@enduml
