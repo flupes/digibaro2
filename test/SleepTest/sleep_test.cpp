@@ -21,10 +21,10 @@
   re-attached at wake up (console can read data again from host).
 
   As is, consumption under Vbat = 4V is as follow:
-    active but no display (internal LED on) = 10.5mA
-    active, with display inactive =           11.5mA
-    active, with display refreshing =         14mA
-    sleep (external RTC off) =                25uA !
+    active but no display (internal LED on) = ~11mA
+    active, with display inactive =           ~12mA
+    active, with display refreshing =         ~15mA
+    sleep (external RTC off) =                22uA !
 
   Compile with:
     pio ci ./test/SleepTest -b zeroUSB -l lib/BaroUtils -l lib/RTClib
@@ -39,16 +39,15 @@
 #include "flash_config.h"
 #include "print_utils.h"
 
-#include "SPI.h"
-#include "Wire.h"
+// Let a chance to the user to connect to the serial port
+#define WAIT_FOR_SERIAL
 
 // Uncomment to test without any peripherals
 // #define BARE_BOARD
 
-// Let a chance to the user to connect to the serial port
-// #define WAIT_FOR_SERIAL
-
-// #define USE_SWITCH
+#ifndef BARE_BOARD
+// External Real Time Clock
+RTC_DS3231 ds3231_rtc;
 
 // Comment out to disable the display
 #define USE_DISPLAY
@@ -68,37 +67,43 @@ GFXcanvas1 *canvas;
 #define COLORED 0
 #define UNCOLORED 1
 
+#endif
+
 // On board SPI Flash Memory
 SPIFlash flash(kMiniUltraProOnBoardChipSelectPin);
 
 // SAMD onboard rtc
 RTCZero onboard_rtc;
 
-#ifndef BARE_BOARD
-// External Real Time Clock
-RTC_DS3231 ds3231_rtc;
-#endif
-
-// unused pins list
-// uint8_t unused_pins[] = {0,  1,  2,  3,  6,  11, 12, 14, 15, 16, 17, 18, 19,
-//                          25, 26, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41};
-
+// Used pins that should not be configured as pull up:
 // Pin 4 is internal chip select for the flash memory
 // Pin 6 is used to power the external RTC
 // Pins 7, 8, 9 and 10 are reserved for the ePaper display
 // Pin 13 is built-in LED
 // Pins 20 and 21 are primary I2C bus
-// Pins 22, 23 and 24 are primary SPI bus
+// Pins 23 and 24 are SPI SCLK and MOSI
 
-// Somehow, configuring either pin 32 or 33 in INPUT-PULLUP breaks the
-// I2C communication with the external RTC !!!
+// Exception:
+// arduino_zero/variant.cpp show that pin 32 and 33 are also mapped to 
+// SDA and SCL (like 20 and 21) --> we cannot consider them unused and 
+// pull them up: it simply breaks the I2C communication with the external RTC !
 
-uint8_t unused_pins[] = {0,  1,  3,  5,  7,  8,  9,  10, 11, 12, 14, 15, 16,
-                         17, 18, 19, 25, 26, 34, 35, 36, 37, 38, 39, 40, 41};
+// Bizarre:
+// Pin 22 is MISO, not used since the zero is the master --> pullup
+// This is however not true for the on-board serial flash... Not sure
+// why pin 22 needs to be configured as pull up to avoid consuming extra 80uA.
+
+#ifndef BARE_BOARD
+uint8_t unused_pins[] = {0,  1,  2,  3,  5,  7,  8,  9,  10, 11,
+                         12, 14, 15, 16, 17, 18, 19, 22,
+                         25, 26, 34, 35, 36, 37, 38, 39, 40, 41};
+#else
+uint8_t unused_pins[] = {0,  1,  2,  3,  5,  6,  7,  8,  9,  10, 11,
+                         12, 14, 15, 16, 17, 18, 19, 20, 21, 22, 25,
+                         26, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41};
+#endif
 
 const uint8_t kRtcPowerPin = 6;
-
-bool switch_wakeup = false;
 
 extern "C" char *sbrk(int i);
 
@@ -107,12 +112,9 @@ int FreeRam() {
   return &stack_dummy - sbrk(0);
 }
 
-void alarmMatch() { onboard_rtc.detachInterrupt(); }
-
-void s1Change() {
-  detachInterrupt(2);
+void alarmMatch() {
+  digitalWrite(LED_BUILTIN, HIGH);
   onboard_rtc.detachInterrupt();
-  switch_wakeup = true;
 }
 
 void configureForSleep() {
@@ -126,7 +128,11 @@ void configureForSleep() {
   PRINTLN(utc.second());
   if (alarm_seconds > 59) alarm_seconds -= 60;
 #else
-  uint8_t alarm_seconds = 0;
+
+  uint8_t alarm_seconds = onboard_rtc.getSeconds() + 15;
+  if (alarm_seconds >= 60) {
+    alarm_seconds -= 60;
+  }
 #endif
 
 #ifdef USE_DISPLAY
@@ -134,40 +140,24 @@ void configureForSleep() {
   delay(100);
 #endif
 
-#ifdef USE_SWITCH
-  bool s1 = digitalRead(2);
-  if (s1) {
-    PRINTLN("switch currently HIGH");
-    attachInterrupt(2, s1Change, LOW);
-  } else {
-    PRINTLN("switch currently LOW")
-    attachInterrupt(2, s1Change, HIGH);
-  }
-  switch_wakeup = false;
-#endif
-
   onboard_rtc.setAlarmSeconds(alarm_seconds);
   onboard_rtc.enableAlarm(onboard_rtc.MATCH_SS);
   onboard_rtc.attachInterrupt(alarmMatch);
-
   digitalWrite(LED_BUILTIN, LOW);
   flash.powerDown();
-  Wire.end();  // no direct effect on consumption, but it the I2C continues
+#ifndef BARE_BOARD
+  // Wire.end();  // no direct effect on consumption, but it the I2C continues
   // the RTC will consume a lot of current from the coin battery
-
-  // pinMode(20, INPUT_PULLUP);
-  // pinMode(21, INPUT_PULLUP);
-  // pinMode(12, INPUT_PULLUP);
-
-  // SPI.end(); --> consume 80uA rather than 20uA if terminating SPI!
   digitalWrite(kRtcPowerPin, LOW);
+#endif
+
   USBDevice.detach();
 }
 
 void setup() {
   Serial.begin(115200);
 
-#ifndef WAIT_FOR_SERIAL
+#ifdef WAIT_FOR_SERIAL
   uint8_t count = 0;
   while (!Serial && count < 10) {
     delay(1000);
@@ -192,9 +182,6 @@ void setup() {
   PRINTLN("Powering the external RTC");
   pinMode(kRtcPowerPin, OUTPUT);
   digitalWrite(kRtcPowerPin, HIGH);
-
-  // pinMode(12, INPUT_PULLDOWN);
-
   // spec sheet says the RTC needs 250ms to stabilize
   delay(300);
   ds3231_rtc.begin();
@@ -211,7 +198,10 @@ void setup() {
   PRINTLN("Set internal clock time.");
   onboard_rtc.setTime(utc.hour(), utc.minute(), utc.second());
   onboard_rtc.setDate(utc.day(), utc.month(), utc.year());
-
+#else
+  onboard_rtc.setTime(10, 10, 01);
+  onboard_rtc.setDate(2019, 04, 30);
+#endif
   PRINT("Configure unused pins:");
   // Configure all unused pins as input, enabled with built-in pullup
   for (uint8_t i = 0; i < sizeof(unused_pins); i++) {
@@ -222,31 +212,9 @@ void setup() {
   }
   PRINTLN();
 
-#else
-  onboard_rtc.setTime(10, 10, 01);
-  onboard_rtc.setDate(2019, 04, 30);
-
-  uint8_t pinNumber;
-  for (pinNumber = 0; pinNumber < 23; pinNumber++) {
-    pinMode(pinNumber, INPUT_PULLUP);
-  }
-  for (pinNumber = 32; pinNumber < 42; pinNumber++) {
-    pinMode(pinNumber, INPUT_PULLUP);
-  }
-  pinMode(25, INPUT_PULLUP);
-  pinMode(26, INPUT_PULLUP);
-#endif
-
-  // Built in LED ON when awake
+  // Built in LED
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, HIGH);
-
-#ifdef USE_SWITCH
-  // switch pin
-  pinMode(2, INPUT);
-#else
-  pinMode(2, INPUT_PULLUP);
-#endif
 
 #ifdef USE_DISPLAY
   // Start display (need the kRtcPowerPin HIGH to be enabled)
@@ -286,12 +254,6 @@ void setup() {
 }
 
 void loop() {
-  // Show that we are awake
-  digitalWrite(LED_BUILTIN, HIGH);
-
-  // Enable power to the external RTC and display
-  digitalWrite(kRtcPowerPin, HIGH);
-
   USBDevice.init();
   USBDevice.attach();
 #ifdef WAIT_FOR_SERIAL
@@ -308,23 +270,25 @@ void loop() {
 
   PRINTLN("Just woke up!");
 
-  // It looks like the SPI works automagically after waking up
-  // SPI.begin();
+  SPI.begin();
+
   flash.powerUp();
 
+#ifndef BARE_BOARD
+  // Enable power to the external RTC and display
+  digitalWrite(kRtcPowerPin, HIGH);
+  // It is necessary to re-enable the I2C bus (why?)
+  // Wire.begin();
   // Wait at least 250ms for the RTC to get up to speed
   delay(300);
 
-  // It is necessary to re-enable the I2C bus (why?)
-  Wire.begin();
-
-#ifndef BARE_BOARD
-  char buffer[64];
   DateTime utc = ds3231_rtc.now();
+  char buffer[64];
   DateTime local = utc.getLocalTime(-8);
   local.toString(buffer);
-
-// pinMode(12, INPUT_PULLDOWN);
+  PRINT("current time = ");
+  PRINTLN(buffer);
+#endif
 
 #ifdef USE_DISPLAY
   PRINTLN("Restart e-Paper...");
@@ -350,27 +314,11 @@ void loop() {
   epd.SetPartialWindow(canvas->getBuffer(), 0, 0, 400, 300);
   epd.DisplayFrame();
 #endif
-  PRINT("current time = ");
-  PRINTLN(buffer);
-#endif
-
-#ifdef USE_SWITCH
-  if (switch_wakeup) {
-    PRINTLN("was awakened from switch state change!");
-  }
-  uint8_t s1 = digitalRead(2);
-  PRINT("switch state: ");
-  PRINTLN(s1);
-#endif
 
   // Try to access SPI Flash, just to make sure it is working.
   uint32_t number = flash.readULong(kPermanentSamplesSectorStart * KB(4));
   PRINT("Read something from flash: ");
   PRINTLN(number);
-
-  // uint8_t dst = digitalRead(12);
-  // PRINT("DST switch position: ");
-  // PRINTLN(dst);
 
   // pretend we are active
   for (uint8_t i = 0; i < 10; i++) {
