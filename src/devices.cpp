@@ -13,26 +13,17 @@ RTCZero onboard_rtc;
 DateTime boot_utc;
 
 /**
- * WARNING: spi_flash needs to be defined AFTER the other devices!
- * It makes not sense, but if the allocation comes before the other
- * devices, then standby mode consumes 2.3mA rather than 23uA!
- * It could be due that the SPIFlash constructor calls pinMode for the
- * CS pin to configure it as OUTPUT.
- * Still, more investigation are required to fully undertand this 
- * ordering sensitivity!
+ * WARNING: the SPIFlash constructor calls pinMode for the
+ * CS pin to configure it as OUTPUT. It may cause side effect...
  */
 SPIFlash spi_flash(kMiniUltraProOnBoardChipSelectPin);
 
-uint8_t pins_to_pullup[] = {0,  1,  2,  3,  5,  7,  8,  9,  10, 11,
-                            12, 14, 15, 16, 17, 18, 19, 22, 25, 26,
-                            34, 35, 36, 37, 38, 39, 40, 41};
+uint8_t pins_to_pullup[] = {0,  1,  5,  7,  8,  9,  10, 11, 12, 14, 15, 16, 17,
+                            18, 19, 22, 25, 26, 34, 35, 36, 37, 38, 39, 40, 41};
 
 size_t nb_pins_to_pullup = sizeof(pins_to_pullup);
 
-
-void configureDevices()
-{
-
+void configureDevices() {
   onboard_rtc.begin();
 
   if (spi_flash.begin()) {
@@ -76,11 +67,15 @@ void configureDevices()
   }
   PRINTLN();
 
+  // Switches input pins
+  for (size_t p = 0; p < 2; p++) {
+    pinMode(kSwitchesPin[p], INPUT);
+  }
+
   // Built in LED
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, HIGH);
 
-  
   // Start display (need the kRtcPowerPin HIGH to be enabled)
   PRINTLN("Init e-Paper...");
   if (ep42_display.Init() != 0) {

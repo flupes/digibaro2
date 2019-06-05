@@ -11,7 +11,7 @@
 #include "print_utils.h"
 #include "rotating_samples.h"
 
-#define WAIT_FOR_SERIAL
+// #define WAIT_FOR_SERIAL
 
 // #define USE_SWITCH
 
@@ -39,14 +39,6 @@ int FreeRam() {
 
 #define COLORED 0
 #define UNCOLORED 1
-
-void switchChange() {
-  for (size_t i = 0; i < 2; i++) {
-    EExt_Interrupts in = g_APinDescription[kSwitchesPin[i]].ulExtInt;
-    uint32_t inMask = 1 << in;
-    EIC->INTENCLR.reg = EIC_INTENCLR_EXTINT(inMask);
-  }
-}
 
 void setup() {
   Serial.begin(115200);
@@ -205,6 +197,9 @@ void loop() {
   onboard_rtc.standbyMode();
   // now we are awake again!
   onboard_rtc.detachInterrupt();
+  for (size_t p=0; p<2; p++) {
+    detachInterrupt(kSwitchesPin[p]);
+  }
   after_awake = millis();
 
   // SPI.begin();

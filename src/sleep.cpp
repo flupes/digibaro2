@@ -3,9 +3,17 @@
 #include "digibaro.h"
 #include "print_utils.h"
 
-void alarmMatch() {
-  digitalWrite(LED_BUILTIN, HIGH);
-  onboard_rtc.detachInterrupt();
+void alarmMatch() { digitalWrite(LED_BUILTIN, HIGH); }
+
+void switchChange() {
+  // We clear the interrupt manually (code from WInterrupts.c)
+  // Otherwise, this callback is constantly repeated since the
+  // switch stays in the same position...
+  for (size_t p = 0; p < 2; p++) {
+    EExt_Interrupts in = g_APinDescription[kSwitchesPin[p]].ulExtInt;
+    uint32_t inMask = 1 << in;
+    EIC->INTENCLR.reg = EIC_INTENCLR_EXTINT(inMask);
+  }
 }
 
 void configureForSleep() {
@@ -26,8 +34,18 @@ void configureForSleep() {
   onboard_rtc.attachInterrupt(alarmMatch);
   digitalWrite(LED_BUILTIN, LOW);
 
+  for (size_t p = 0; p < 2; p++) {
+    uint8_t pin = kSwitchesPin[p];
+    bool s = digitalRead(pin);
+    if (s) {
+      attachInterrupt(pin, switchChange, LOW);
+    } else {
+      attachInterrupt(pin, switchChange, HIGH);
+    }
+  }
+
   // spi_flash.powerDown();
-  
+
   // Wire.end();  // no direct effect on consumption, but it the I2C continues
   // the RTC will consume a lot of current from the coin battery
   digitalWrite(kRtcPowerPin, LOW);
