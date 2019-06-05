@@ -10,6 +10,8 @@ Epd ep42_display;
 
 RTCZero onboard_rtc;
 
+DateTime boot_utc;
+
 /**
  * WARNING: spi_flash needs to be defined AFTER the other devices!
  * It makes not sense, but if the allocation comes before the other
@@ -49,20 +51,23 @@ void configureDevices()
   ds3231_rtc.begin();
 
   PRINTLN("Getting time from external clock.");
-  DateTime utc = ds3231_rtc.now();
+  boot_utc = ds3231_rtc.now();
   char buffer[64];
-  DateTime local = utc.getLocalTime(-8);
+  DateTime local = boot_utc.getLocalTime(-8);
   local.toString(buffer);
   PRINT("current time = ");
   PRINTLN(buffer);
 
   // Set time of internal clock
   PRINTLN("Set internal clock time.");
-  onboard_rtc.setTime(utc.hour(), utc.minute(), utc.second());
-  onboard_rtc.setDate(utc.day(), utc.month(), utc.year());
+  onboard_rtc.setTime(boot_utc.hour(), boot_utc.minute(), boot_utc.second());
+  onboard_rtc.setDate(boot_utc.day(), boot_utc.month(), boot_utc.year());
 
   PRINT("Configure unused pins:");
   // Configure all unused pins as input, enabled with built-in pullup
+  // WARNING: for now, these pins are configured BEFORE the e-Paper
+  // is initialized, otherwise the e-Paper is not responding!
+  // I suspect this is because we re-configure a pin wrong...
   for (uint8_t i = 0; i < sizeof(pins_to_pullup); i++) {
     uint8_t pin = pins_to_pullup[i];
     PRINT(" ");
@@ -74,6 +79,7 @@ void configureDevices()
   // Built in LED
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, HIGH);
+
   
   // Start display (need the kRtcPowerPin HIGH to be enabled)
   PRINTLN("Init e-Paper...");
@@ -95,7 +101,4 @@ void configureDevices()
   // uint32_t index = perm_samples.begin();
   // PRINT("Last retrieved sample index = ");
   // PRINTLN(index);
-
-
-
 }

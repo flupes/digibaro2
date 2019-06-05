@@ -21,11 +21,14 @@ GFXcanvas1 *canvas;
 // Permanent samples written to flash
 PermanentSamples perm_samples(spi_flash);
 
+uint32_t spi_addr;
+
 // Rotating buffer of samples
 RotatingSamples ring_samples(spi_flash);
 
 const int8_t kTimeZone = -8;
 const int16_t kAltitude = 220;
+DateTime startup;
 
 extern "C" char *sbrk(int i);
 
@@ -80,6 +83,16 @@ void setup() {
   PRINTLN("frame should be displayed...");
   // crucial delay to let us chance to reflash!
   delay(5 * 1000);
+
+  PRINT("Permanent sample start addr = ");
+  PRINTLN(kPermanentSamplesAddrStart);
+  uint32_t nb_samples = perm_samples.begin();
+  spi_addr =
+      nb_samples * kPermanentSampleBytesLength + kPermanentSamplesAddrStart;
+  PRINT("Permanent sample retuned # = ");
+  PRINTLN(nb_samples);
+  PRINT("Flash address start =  ");
+  PRINTLN(spi_addr);
 }
 
 void collectSample(DateTime &dt) {
@@ -116,13 +129,13 @@ void collectSample(DateTime &dt) {
   }
   char buffer[64];
   sprintf(buffer, "pressure: %d", (int)sample.PressureMilliBar());
-  canvas->setCursor(4, 150);
+  canvas->setCursor(4, 140);
   canvas->print(buffer);
   sprintf(buffer, "temperature: %d", (int)sample.TemperatureDegCelcius());
-  canvas->setCursor(4, 200);
+  canvas->setCursor(4, 190);
   canvas->print(buffer);
   sprintf(buffer, "humitidy: %d", (int)sample.HumidityPercent());
-  canvas->setCursor(4, 250);
+  canvas->setCursor(4, 240);
   canvas->print(buffer);
 
   // uint32_t count = perm_samples.AddSample(sample);
@@ -135,37 +148,68 @@ void collectSample(DateTime &dt) {
 }
 
 void loop() {
- 
+  static uint32_t counter = 0;
+  static uint32_t awake_ms = 0;
+  static uint32_t after_awake = 0;
+
+  if (!after_awake) after_awake = millis();
+
+  counter++;
+  spi_flash.writeULong(spi_addr, counter);
+  spi_addr += 4;
+
   DateTime utc = ds3231_rtc.now();
+  spi_flash.writeULong(spi_addr, utc.unixtime());
+  spi_addr += 4;
   char buffer[64];
   DateTime local = utc.getLocalTime(-8);
   local.toString(buffer);
   PRINT("current time = ");
   PRINTLN(buffer);
 
+  spi_flash.writeByte(spi_addr++, 1);
   // Display something to prove we are alive
   // epd.ClearFrame();
   canvas->fillScreen(UNCOLORED);
   sprintf(buffer, "Date: %04d-%02d-%02d", local.year(), local.month(),
           local.day());
-  canvas->setCursor(4, 50);
+  canvas->setCursor(4, 40);
   canvas->print(buffer);
 
   sprintf(buffer, "Time: %02d:%02d:%02d", local.hour(), local.minute(),
           local.second());
-  canvas->setCursor(4, 100);
+  canvas->setCursor(4, 90);
   canvas->print(buffer);
 
+  sprintf(buffer, "%lu %lus %luh", counter, awake_ms / 1000,
+          (utc.secondstime() - boot_utc.secondstime()) / 3600);
+  canvas->setCursor(5, 290);
+  canvas->print(buffer);
+
+  spi_flash.writeByte(spi_addr++, 2);
   collectSample(utc);
+  spi_flash.writeByte(spi_addr++, 3);
 
   ep42_display.SetPartialWindow(canvas->getBuffer(), 0, 0, 400, 300);
   ep42_display.DisplayFrame();
 
+  spi_flash.writeByte(spi_addr++, 4);
+
   PRINTLN("Go to sleep for another 15s...")
   configureForSleep();
+
+  spi_flash.writeByte(spi_addr++, 5);
+
+  awake_ms += (millis() - after_awake);
+
   onboard_rtc.standbyMode();
   // now we are awake again!
   onboard_rtc.detachInterrupt();
+  after_awake = millis();
+
+  // SPI.begin();
+  // spi_flash.powerUp();
+  spi_flash.writeByte(spi_addr++, 6);
 
   USBDevice.init();
   USBDevice.attach();
@@ -178,11 +222,8 @@ void loop() {
   delay(2000);
 #endif
 
+  spi_flash.writeByte(spi_addr++, 7);
   PRINTLN("Just woke up!");
-
-  SPI.begin();
-
-  spi_flash.powerUp();
 
   // Enable power to the external RTC and display
   digitalWrite(kRtcPowerPin, HIGH);
@@ -197,5 +238,5 @@ void loop() {
     while (1)
       ;
   }
-
+  spi_flash.writeByte(spi_addr++, 8);
 }

@@ -38,4 +38,6 @@ extern Bme280Sensor bme;
 extern uint8_t pins_to_pullup[];
 extern size_t nb_pins_to_pullup;
 
+extern DateTime boot_utc;
+
 #endif
