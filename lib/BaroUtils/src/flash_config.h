@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+class SPIFlash;
+
 // Flash memory types size (should be merged with BaroSample, etc.)
 constexpr uint32_t kRobustIndexByteLength = 4;
 constexpr uint32_t kRingSampleByteLength = 16;
@@ -16,12 +18,20 @@ constexpr uint32_t kRobustIndexesSectorLength =
 
 constexpr uint32_t kRingSamplesSectorStart =
     kRobustIndexesSectorStart + kRobustIndexesSectorLength;
-constexpr uint32_t kRingSamplesSectorLength = 12;  // 3072*16[sample_size] / 4096
+constexpr uint32_t kRingSamplesSectorLength =
+    12;  // 3072*16[sample_size] / 4096
 
 constexpr uint32_t kPermanentSamplesSectorStart =
     kRingSamplesSectorStart + kRingSamplesSectorLength;
 // constexpr uint32_t kPermanentSamplesSectorLength = 490;
-constexpr uint32_t kPermanentSamplesSectorLength = 16;
+constexpr uint32_t kPermanentSamplesSectorLength = 86;
+
+constexpr uint32_t kDebugSectorStart =
+    kPermanentSamplesSectorStart + kPermanentSamplesSectorLength;
+
+constexpr uint32_t KDebugSectorLength = 512 - kDebugSectorStart;
+
+extern uint32_t NextAvailableDebugAddr(SPIFlash &flash);
 
 constexpr uint8_t kMiniUltraProOnBoardChipSelectPin = 4;
 
