@@ -17,7 +17,8 @@ class GraphSamples : public DisplaySamples {
   GraphSamples(uint32_t period_in_seconds, uint32_t length = kGraphPxLength)
       : DisplaySamples(period_in_seconds, length) {}
 
-  bool Draw(GFXcanvas1 &canvas);
+  bool Draw(GFXcanvas1 &canvas, uint8_t background_color = 0,
+            uint8_t foreground_color = 1);
 };
 
 #endif

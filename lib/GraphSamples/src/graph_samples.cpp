@@ -6,13 +6,10 @@
 #include "labels.h"
 #include "print_utils.h"
 
-#define COLORED 0
-#define UNCOLORED 1
-
 #define USE_LINE
 
-bool GraphSamples::Draw(GFXcanvas1 &canvas) {
-  canvas.fillScreen(UNCOLORED);
+bool GraphSamples::Draw(GFXcanvas1 &canvas, uint8_t bg_color, uint8_t fg_color) {
+  canvas.fillScreen(bg_color);
 
   // canvas.drawRect(graph_xstart, graph_ystart, graph_width, -graph_height,
   //                 COLORED);
@@ -20,7 +17,7 @@ bool GraphSamples::Draw(GFXcanvas1 &canvas) {
   // COLORED);
   // draw the left vertical line of the graph boundary.
   // (all the others boundaries will be draw together with the tick marks)
-  canvas.drawFastVLine(graph_xstart, graph_ystart, -graph_height, COLORED);
+  canvas.drawFastVLine(graph_xstart, graph_ystart, -graph_height, fg_color);
 
   label_spec lbl;
   loose_label(min_, max_, 5, lbl);
@@ -33,7 +30,7 @@ bool GraphSamples::Draw(GFXcanvas1 &canvas) {
 
   uint32_t start = millis();
   char buffer[8];
-  canvas.setTextColor(COLORED);
+  canvas.setTextColor(fg_color);
   canvas.setTextSize(1);
   canvas.setTextWrap(false);
   canvas.setFont(&ClearSans_Medium10pt7b);
@@ -42,8 +39,8 @@ bool GraphSamples::Draw(GFXcanvas1 &canvas) {
   int16_t tick = lbl.min_label;
   int16_t x_label = graph_xstart + graph_width;
   for (int16_t i = 0; i < lbl.nb_marks; i++) {
-    canvas.drawFastHLine(graph_xstart, y, graph_width + 4, COLORED);
-    // canvas.drawFastHLine(x_label, y-1, 4, COLORED);
+    canvas.drawFastHLine(graph_xstart, y, graph_width + 4, fg_color);
+    // canvas.drawFastHLine(x_label, y-1, 4, fg_color);
     sprintf(buffer, "%d", tick / 10);
     // int16_t tx, ty;
     // uint16_t tw, th;
@@ -76,7 +73,7 @@ bool GraphSamples::Draw(GFXcanvas1 &canvas) {
   int16_t period_px = 3600 * major_hours * graph_width / (size_ * period_);
   for (uint8_t t = 0; t <= nb_ticks; t++) {
     canvas.drawFastVLine(mark_px, graph_ystart + 4, -(graph_height + 4),
-                         COLORED);
+                         fg_color);
     if (mark_hours == 0) {
       sprintf(buffer, "0");
     } else {
@@ -104,9 +101,9 @@ bool GraphSamples::Draw(GFXcanvas1 &canvas) {
         graph_height * (data - lbl.min_label) / (lbl.max_label - lbl.min_label);
     if (y1 != 0 && data != INT16_MIN) {
       if (y1 < y2) {
-        canvas.drawFastVLine(i + graph_xstart, y1 - 1, 2 + (y2 - y1), COLORED);
+        canvas.drawFastVLine(i + graph_xstart, y1 - 1, 2 + (y2 - y1), fg_color);
       } else {
-        canvas.drawFastVLine(i + graph_xstart, y2 - 1, 2 + (y1 - y2), COLORED);
+        canvas.drawFastVLine(i + graph_xstart, y2 - 1, 2 + (y1 - y2), fg_color);
       }
     }
     if (data == INT16_MIN) {
@@ -117,7 +114,7 @@ bool GraphSamples::Draw(GFXcanvas1 &canvas) {
 #else
     if (data != INT16_MIN) {
       int16_t y = 300 - 300 * (data - min_) / (max_ - min_);
-      canvas.drawFastVLine(i + 50, y, 300, COLORED);
+      canvas.drawFastVLine(i + 50, y, 300, fg_color);
     }
 #endif
   }

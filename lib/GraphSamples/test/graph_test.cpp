@@ -35,8 +35,7 @@ Epd epd;
 // canvas to draw on
 GFXcanvas1 canvas(400, 300);
 
-#define COLORED 0
-#define UNCOLORED 1
+// #define TEST_LUT
 
 const uint8_t kRtcPowerPin = 6;
 
@@ -78,13 +77,23 @@ void setup() {
 }
 
 void loop() {
+
+#ifndef TEST_LUT
+  static bool flip = false;
+
+  uint8_t foreground = 0;
+  uint8_t background = 1;
+  if (flip) {
+    foreground = 1;
+    background = 0;
+  }
   uint32_t start = millis();
   uint32_t begining = start;
-  epd.Init(false);
+  epd.Init(true);
   uint32_t init_ms = millis();
   epd.ConfigAndSendOldBuffer(canvas.getBuffer());
   uint32_t oldbuf_ms = millis();
-  daily_buffer.Draw(canvas);
+  daily_buffer.Draw(canvas, background, foreground);
   uint32_t draw_ms = millis();
   // epd.SetPartialWindow(canvas.getBuffer(), 0, 0, 400, 300);
   // epd.DisplayFrame();
@@ -108,12 +117,33 @@ void loop() {
 
 
   delay(1000 * 20);
-  epd.Init(false);
+  epd.Init(true);
   epd.ConfigAndSendOldBuffer(canvas.getBuffer());
-  weekly_buffer.Draw(canvas);
+  weekly_buffer.Draw(canvas, background, foreground);
   // epd.SetPartialWindow(canvas.getBuffer(), 0, 0, 400, 300);
   epd.SendNewBufferAndRefresh(canvas.getBuffer());
   // epd.DisplayFrame();
   epd.Sleep();
   delay(1000 * 20);
+
+  flip = !flip;
+
+#else
+  epd.Init(true);
+  epd.ConfigAndSendOldBuffer(canvas.getBuffer());
+  canvas.fillScreen(0);
+  canvas.fillRect(40, 70, 120, 160, 1);
+  canvas.fillRect(200, 0, 200, 300, 1);
+  canvas.fillCircle(300, 150, 80, 0);
+  epd.SendNewBufferAndRefresh(canvas.getBuffer());
+  epd.Sleep();
+  delay(1000 * 10);
+  epd.Init(true);
+  epd.ConfigAndSendOldBuffer(canvas.getBuffer());
+  canvas.fillScreen(0);
+  canvas.fillRoundRect(80, 30, 240, 240, 60, 1);
+  epd.SendNewBufferAndRefresh(canvas.getBuffer());
+  epd.Sleep();
+  delay(1000 * 10);
+#endif
 }
