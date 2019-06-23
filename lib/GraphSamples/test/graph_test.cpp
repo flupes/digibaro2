@@ -62,7 +62,7 @@ void setup() {
 
   PRINTLN("Init e-Paper...");
 
-  if (epd.Init() != 0) {
+  if (epd.Init(false) != 0) {
     PRINTLN("e-Paper init failed");
     return;
   }
@@ -80,28 +80,40 @@ void setup() {
 void loop() {
   uint32_t start = millis();
   uint32_t begining = start;
+  epd.Init(false);
+  uint32_t init_ms = millis();
+  epd.ConfigAndSendOldBuffer(canvas.getBuffer());
+  uint32_t oldbuf_ms = millis();
   daily_buffer.Draw(canvas);
-  uint32_t stop = millis();
-  PRINT("draw elapsed (ms) : ");
-  PRINTLN(stop - start);
+  uint32_t draw_ms = millis();
+  // epd.SetPartialWindow(canvas.getBuffer(), 0, 0, 400, 300);
+  // epd.DisplayFrame();
+  epd.SendNewBufferAndRefresh(canvas.getBuffer());
+  uint32_t newbuf_ms = millis();
+  epd.Sleep();
+  uint32_t sleep_ms = millis();
+  PRINTLN("TIMINGS (ms)");
+  PRINT("  reset and init     = ");
+  PRINTLN(init_ms-start);
+  PRINT("  old data transfer  = ");
+  PRINTLN(oldbuf_ms-init_ms);
+  PRINT("  graph drawing      = ");
+  PRINTLN(draw_ms-oldbuf_ms);
+  PRINT("  new data + refresh = ");
+  PRINTLN(newbuf_ms-draw_ms);
+  PRINT("  display to sleep   = ");
+  PRINTLN(sleep_ms-newbuf_ms);
+  PRINT("  total              = ");
+  PRINTLN(sleep_ms-start);
 
-  start = millis();
-  epd.SetPartialWindow(canvas.getBuffer(), 0, 0, 400, 300);
-  stop = millis();
-  PRINT("transfer elapsed (ms) : ");
-  PRINTLN(stop - start);
 
-  start = millis();
-  epd.DisplayFrame();
-  stop = millis();
-  PRINT("refresh elapsed (ms) : ");
-  PRINTLN(stop - start);
-  PRINT("total display updated (ms) = ");
-  PRINTLN(stop-begining);
-  
   delay(1000 * 20);
+  epd.Init(false);
+  epd.ConfigAndSendOldBuffer(canvas.getBuffer());
   weekly_buffer.Draw(canvas);
-  epd.SetPartialWindow(canvas.getBuffer(), 0, 0, 400, 300);
-  epd.DisplayFrame();
+  // epd.SetPartialWindow(canvas.getBuffer(), 0, 0, 400, 300);
+  epd.SendNewBufferAndRefresh(canvas.getBuffer());
+  // epd.DisplayFrame();
+  epd.Sleep();
   delay(1000 * 20);
 }
