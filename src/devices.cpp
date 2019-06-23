@@ -12,6 +12,8 @@ RTCZero onboard_rtc;
 
 DateTime boot_utc;
 
+FlashDebug flash_debug;
+
 /**
  * WARNING: the SPIFlash constructor calls pinMode for the
  * CS pin to configure it as OUTPUT. It may cause side effect...
@@ -24,7 +26,6 @@ uint8_t pins_to_pullup[] = {0,  1,  5,  7,  8,  9,  10, 11, 12, 14, 15, 16, 17,
 size_t nb_pins_to_pullup = sizeof(pins_to_pullup);
 
 void configureDevices() {
-  onboard_rtc.begin();
 
   if (spi_flash.begin()) {
     PRINTLN("Serial Flash started.")
@@ -33,6 +34,14 @@ void configureDevices() {
     while (1)
       ;
   }
+
+  uint32_t start = flash_debug.SetFlash(&spi_flash);
+  Serial.print("debug addr start = ");
+  Serial.println(start);
+
+  flash_debug.Message(FlashDebug::BOOT);
+
+  onboard_rtc.begin();
 
   PRINTLN("Powering the external RTC");
   pinMode(kRtcPowerPin, OUTPUT);
@@ -50,10 +59,25 @@ void configureDevices() {
   PRINTLN(buffer);
 
   // Set time of internal clock
-  PRINTLN("Set internal clock time.");
+  PRINT("onboard_rtc.setTime(");
+  PRINT(boot_utc.hour());
+  PRINT(", ");
+  PRINT(boot_utc.minute());
+  PRINT(", ");
+  PRINT(boot_utc.second());
+  PRINTLN(")");
   onboard_rtc.setTime(boot_utc.hour(), boot_utc.minute(), boot_utc.second());
-  onboard_rtc.setDate(boot_utc.day(), boot_utc.month(), boot_utc.year());
+  PRINT("onboard_rtc.setDime(");
+  PRINT(boot_utc.day());
+  PRINT(", ");
+  PRINT(boot_utc.month());
+  PRINT(", ");
+  PRINT(boot_utc.year()-2000);
+  PRINTLN(")");
+  onboard_rtc.setDate(boot_utc.day(), boot_utc.month(), boot_utc.year()-2000);
 
+  flash_debug.SetRTC(&onboard_rtc);
+  
   PRINT("Configure unused pins:");
   // Configure all unused pins as input, enabled with built-in pullup
   // WARNING: for now, these pins are configured BEFORE the e-Paper

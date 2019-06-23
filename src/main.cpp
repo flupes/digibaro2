@@ -10,6 +10,8 @@
 #include "permanent_samples.h"
 #include "print_utils.h"
 #include "rotating_samples.h"
+#include "watchdog_timer.h"
+#include "flash_debug.h"
 
 // #define WAIT_FOR_SERIAL
 
@@ -79,12 +81,15 @@ void setup() {
   PRINT("Permanent sample start addr = ");
   PRINTLN(kPermanentSamplesAddrStart);
   uint32_t nb_samples = perm_samples.begin();
-  spi_addr =
-      nb_samples * kPermanentSampleBytesLength + kPermanentSamplesAddrStart;
   PRINT("Permanent sample retuned # = ");
   PRINTLN(nb_samples);
-  PRINT("Flash address start =  ");
-  PRINTLN(spi_addr);
+  // PRINT("Flash address start =  ");
+  // spi_addr =
+  //     nb_samples * kPermanentSampleBytesLength + kPermanentSamplesAddrStart;
+  // PRINTLN(spi_addr);
+
+  wdt_configure(9);
+
 }
 
 void collectSample(DateTime &dt) {
@@ -147,19 +152,25 @@ void loop() {
   if (!after_awake) after_awake = millis();
 
   counter++;
-  spi_flash.writeULong(spi_addr, counter);
-  spi_addr += 4;
+  // spi_flash.writeULong(spi_addr, counter);
+  // spi_addr += 4;
 
   DateTime utc = ds3231_rtc.now();
-  spi_flash.writeULong(spi_addr, utc.unixtime());
-  spi_addr += 4;
+  // if (counter % 10 == 0) {
+  //   // re-sync the onboard RTC occasionaly
+  //   onboard_rtc.setTime(utc.hour(), utc.minute(), utc.second());
+  //   onboard_rtc.setDate(utc.day(), utc.month(), utc.year());
+  // }
+
+  // spi_flash.writeULong(spi_addr, utc.unixtime());
+  // spi_addr += 4;
   char buffer[64];
   DateTime local = utc.getLocalTime(-8);
   local.toString(buffer);
   PRINT("current time = ");
   PRINTLN(buffer);
 
-  spi_flash.writeByte(spi_addr++, 1);
+  // spi_flash.writeByte(spi_addr++, 1);
   // Display something to prove we are alive
   // epd.ClearFrame();
   canvas->fillScreen(UNCOLORED);
@@ -178,35 +189,39 @@ void loop() {
   canvas->setCursor(5, 290);
   canvas->print(buffer);
 
-  spi_flash.writeByte(spi_addr++, 2);
+  // spi_flash.writeByte(spi_addr++, 2);
   collectSample(utc);
-  spi_flash.writeByte(spi_addr++, 3);
+  // spi_flash.writeByte(spi_addr++, 3);
 
   ep42_display.SetPartialWindow(canvas->getBuffer(), 0, 0, 400, 300);
   ep42_display.DisplayFrame();
 
-  spi_flash.writeByte(spi_addr++, 4);
+  // spi_flash.writeByte(spi_addr++, 4);
 
   PRINTLN("Go to sleep for another 15s...")
   configureForSleep();
 
-  spi_flash.writeByte(spi_addr++, 5);
+  // spi_flash.writeByte(spi_addr++, 5);
+  flash_debug.Message(FlashDebug::STANDBY, 1, counter);
 
   awake_ms += (millis() - after_awake);
 
   onboard_rtc.standbyMode();
   // now we are awake again!
   onboard_rtc.detachInterrupt();
-  for (size_t p=0; p<2; p++) {
+  for (size_t p = 0; p < 2; p++) {
     detachInterrupt(kSwitchesPin[p]);
   }
   after_awake = millis();
+  wdt_reset();
 
   // SPI.begin();
   // spi_flash.powerUp();
-  spi_flash.writeByte(spi_addr++, 6);
+  // spi_flash.writeByte(spi_addr++, 6);
+  flash_debug
+      .Message(FlashDebug::WAKEUP, 1, awake_ms / 1000);
 
-  USBDevice.init();
+          USBDevice.init();
   USBDevice.attach();
 #ifdef WAIT_FOR_SERIAL
   uint8_t count = 0;
