@@ -7,7 +7,7 @@
 /* Compile with:
 pio ci .\test\SetSampleData --board=zeroUSB -l ..\BaroUtils -l ..\BaroSample
   -l ..\SPIMemory -l ..\FastCRC -l ..\RobustFlashIndexes -l ..\RotatingSamples
-  -O "build_flags = -DDIGI_DEBUG" -O "targets=upload"
+  -l ..\RTCZero -O "build_flags = -DDIGI_DEBUG" -O "targets=upload"
 */
 
 /*
@@ -29,7 +29,7 @@ Rotating sample new index = 1627
 SPIFlash flash(kMiniUltraProOnBoardChipSelectPin);
 
 // Hour twelthes log to flash
-RotatingSamples rotating_samples(flash, 404);
+RotatingSamples rotating_samples(flash, 492);
 
 void setup() {
   Serial.begin(115200);
@@ -54,11 +54,6 @@ void setup() {
   uint32_t rotating_index = rotating_samples.begin();
   PRINT("Rotating sample current index = ");
   PRINTLN(rotating_index);
-
-  PRINT("kRobustIndexesSectorStart =");
-  PRINTLN(kRobustIndexesSectorStart);
-  PRINT("kRingSamplesSectorStart = ");
-  PRINTLN(kRingSamplesSectorStart);
 
   BaroSample s;
   for (uint32_t i = 0; i < kNumberOfSamples; i++) {

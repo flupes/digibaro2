@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-const int16_t kGraphPxLength = 320;
+const int16_t kGraphPxLength = 340;
 
 class RotatingSamples;
 class BaroSample;
@@ -56,6 +56,8 @@ class DisplaySamples {
 
   int16_t SerieMax() { return max_; }
 
+  uint32_t SeriePeriod() { return period_; }
+  
   uint32_t size() { return size_; }
 
   int16_t Data(int16_t index);
