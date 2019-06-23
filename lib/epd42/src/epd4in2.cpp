@@ -59,8 +59,9 @@ int Epd::Init(void) {
     SendCommand(POWER_ON);
     WaitUntilIdle();
     SendCommand(PANEL_SETTING);
-    SendData(0xbf);    // KW-BF   KWR-AF  BWROTP 0f
-    SendData(0x0b);
+    // SendData(0xbf);    // KW-BF   KWR-AF  BWROTP 0f
+    // SendData(0x0b);
+    SendData(0x3F);  // 300x400 B/W mode, LUT set by register
     SendCommand(PLL_CONTROL);
     SendData(0x3c);        // 3A 100HZ   29 150Hz 39 200HZ  31 171HZ
     /* EPD hardware init end */
@@ -88,7 +89,7 @@ void Epd::SendData(unsigned char data) {
  */
 void Epd::WaitUntilIdle(void) {
     while(DigitalRead(busy_pin) == 0) {      //0: busy, 1: idle
-        DelayMs(100);
+        DelayMs(10);
     }      
 }
 
@@ -156,12 +157,12 @@ void Epd::SetLut(void) {
 
     SendCommand(LUT_WHITE_TO_BLACK);                      //wb w
     for(count = 0; count < 42; count++) {
-        SendData(lut_bb[count]);
+        SendData(lut_wb[count]);
     } 
 
     SendCommand(LUT_BLACK_TO_BLACK);                      //bb b
     for(count = 0; count < 42; count++) {
-        SendData(lut_wb[count]);
+        SendData(lut_bb[count]);
     } 
 }
 
@@ -267,7 +268,7 @@ void Epd::Sleep() {
 
 const unsigned char lut_vcom0[] =
 {
-0x00, 0x17, 0x00, 0x00, 0x00, 0x02,        
+0x40, 0x17, 0x00, 0x00, 0x00, 0x02,        
 0x00, 0x17, 0x17, 0x00, 0x00, 0x02,        
 0x00, 0x0A, 0x01, 0x00, 0x00, 0x01,        
 0x00, 0x0E, 0x0E, 0x00, 0x00, 0x02,        
