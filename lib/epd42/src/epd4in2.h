@@ -86,7 +86,7 @@ public:
 
     Epd();
     ~Epd();
-    int  Init(void);
+    int Init(bool opt_lut = true);
     void SendCommand(unsigned char command);
     void SendData(unsigned char data);
     void WaitUntilIdle(void);
@@ -97,6 +97,8 @@ public:
     void SetLut(void);
     void DisplayFrame(const unsigned char* frame_buffer);
     void DisplayFrame(void);
+    void ConfigAndSendOldBuffer(const unsigned char* frame_buffer);
+    void SendNewBufferAndRefresh(const unsigned char* frame_buffer);   
     void ClearFrame(void);
     void Sleep(void);
 
@@ -105,6 +107,7 @@ private:
     unsigned int dc_pin;
     unsigned int cs_pin;
     unsigned int busy_pin;
+    bool use_reg_lut;
 };
 
 #endif /* EPD4IN2_H */
