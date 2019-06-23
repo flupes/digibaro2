@@ -9,6 +9,8 @@
 #include <bme280_sensor.h>
 #include <epd4in2.h>
 
+#include "flash_debug.h"
+
 constexpr uint8_t kRtcPowerPin = 6;
 
 constexpr uint8_t kSwitchesPin[2] = {2, 3};
@@ -39,5 +41,7 @@ extern uint8_t pins_to_pullup[];
 extern size_t nb_pins_to_pullup;
 
 extern DateTime boot_utc;
+
+extern FlashDebug flash_debug;
 
 #endif
