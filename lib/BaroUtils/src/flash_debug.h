@@ -1,3 +1,6 @@
+#ifndef DIGIBARO_FLASH_DEBUG
+#define DIGIBARO_FLASH_DEBUG
+
 #include <stdint.h>
 
 class SPIFlash;
@@ -20,3 +23,5 @@ class FlashDebug {
   uint32_t addr_;
   char buffer[24];
 };
+
+#endif

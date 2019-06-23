@@ -8,6 +8,7 @@
 FlashDebug::FlashDebug() : flash_(0), rtc_(0) {}
 
 uint32_t FlashDebug::SetFlash(SPIFlash *flash) {
+  if (!flash) return 0;
   flash_ = flash;
   if (NextAvailableDebugAddr()) {
     Message(INIT);
@@ -30,6 +31,8 @@ bool FlashDebug::SetRTC(RTCZero *rtc) {
 }
 
 bool FlashDebug::Message(MessageType type, uint8_t value, int16_t extra) {
+  if (!flash_) return false;
+  
   uint32_t seconds = 0;
   if (rtc_) {
     seconds = rtc_->getEpoch();
