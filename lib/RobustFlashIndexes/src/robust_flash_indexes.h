@@ -33,7 +33,7 @@ class RobustFlashIndexes {
    * total_sectors: number of sectors to reserve for the indexes.
    *     Since two copies of the indexes are stored, only half of the
    *     total_sector is actually useful information. An even number is required
-   *     (otherwise the evennumber below the one given is used)
+   *     (otherwise the even number below the one given is used)
   */
   RobustFlashIndexes(uint32_t sector_start, uint32_t total_sectors);
 

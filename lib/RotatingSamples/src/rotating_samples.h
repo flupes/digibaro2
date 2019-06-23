@@ -11,8 +11,8 @@ class RotatingSamples {
  public:
   /**
    * Declare the rotating samples.
-   * Rotating samples relies on Ro  bustFlashIndexes to maintain the indexes.
-   * Warning: the optional argument should be used for debug purpose only. It
+   * Rotating samples relies on RobustFlashIndexes to maintain the indexes.
+   * Warning: the optional arguments should be used for debug purpose only. It
    * will break the memory map layout in flash_config.h (more speficically
    * the constant kPermanentSamplesSectorStart)!
    */
