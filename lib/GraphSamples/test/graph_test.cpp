@@ -23,7 +23,7 @@ pio ci .\test --board=zeroUSB -l src -l ..\BaroUtils -l ..\BaroSample
 SPIFlash flash(kMiniUltraProOnBoardChipSelectPin);
 
 // Hour twelthes log to flash
-RotatingSamples rotating_samples(flash, 404);
+RotatingSamples rotating_samples(flash, 492);
 
 // Two buffers with different periods
 GraphSamples daily_buffer(5 * 60);

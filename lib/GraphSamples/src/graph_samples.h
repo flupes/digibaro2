@@ -7,9 +7,9 @@ class GFXcanvas1;
 
 constexpr int16_t screen_width = 400;
 constexpr int16_t screen_height = 300;
-constexpr int16_t graph_width = 320;
-constexpr int16_t graph_height = 240;
-constexpr int16_t graph_xstart = 80;
+constexpr int16_t graph_width = 340;
+constexpr int16_t graph_height = 220;
+constexpr int16_t graph_xstart = 2;
 constexpr int16_t graph_ystart = 280;
 
 class GraphSamples : public DisplaySamples {

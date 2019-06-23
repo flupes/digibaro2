@@ -14,8 +14,13 @@
 bool GraphSamples::Draw(GFXcanvas1 &canvas) {
   canvas.fillScreen(UNCOLORED);
 
-  canvas.drawRect(graph_xstart, graph_ystart, graph_width, -graph_height,
-                  COLORED);
+  // canvas.drawRect(graph_xstart, graph_ystart, graph_width, -graph_height,
+  //                 COLORED);
+  // canvas.drawFastVLine(graph_xstart+graph_width, graph_ystart, -graph_height,
+  // COLORED);
+  // draw the left vertical line of the graph boundary.
+  // (all the others boundaries will be draw together with the tick marks)
+  canvas.drawFastVLine(graph_xstart, graph_ystart, -graph_height, COLORED);
 
   label_spec lbl;
   loose_label(min_, max_, 5, lbl);
@@ -35,25 +40,60 @@ bool GraphSamples::Draw(GFXcanvas1 &canvas) {
   int16_t y = graph_ystart;
   int16_t step = graph_height / (lbl.nb_marks - 1);
   int16_t tick = lbl.min_label;
+  int16_t x_label = graph_xstart + graph_width;
   for (int16_t i = 0; i < lbl.nb_marks; i++) {
-    canvas.drawFastHLine(graph_xstart - 4, y, 4, COLORED);
+    canvas.drawFastHLine(graph_xstart, y, graph_width + 4, COLORED);
+    // canvas.drawFastHLine(x_label, y-1, 4, COLORED);
     sprintf(buffer, "%d", tick / 10);
-    int16_t tx, ty;
-    uint16_t tw, th;
-    canvas.getTextBounds(buffer, 0, 100, &tx, &ty, &tw, &th);
+    // int16_t tx, ty;
+    // uint16_t tw, th;
+    // canvas.getTextBounds(buffer, 0, 100, &tx, &ty, &tw, &th);
     // PRINTLN(buffer);
     // DEBUG("tx", tx);
     // DEBUG("ty", ty);
     // DEBUG("tw", tw);
     // DEBUG("th", th);
-    canvas.setCursor(graph_xstart - 8 - tw, y + th / 2);
+    canvas.setCursor(x_label + 6, y + 4);
     canvas.print(buffer);
     y -= step;
     tick += lbl.increment;
   }
   uint32_t stop = millis();
   PRINT("graph marks elapsed (ms) : ");
-  PRINTLN(stop-start);
+  PRINTLN(stop - start);
+
+  uint32_t series_hours = (size_ * period_) / 3600;
+  uint8_t major_hours;
+  uint8_t nb_ticks;
+  uint8_t hours_intervals[] = {1, 3, 6, 12, 24, 36, 48};
+  for (uint8_t k = 0; k < sizeof(hours_intervals); k++) {
+    major_hours = hours_intervals[k];
+    nb_ticks = series_hours / major_hours;
+    if (nb_ticks < 6) break;
+  }
+  int16_t mark_hours = 0;
+  int16_t mark_px = graph_xstart + graph_width;
+  int16_t period_px = 3600 * major_hours * graph_width / (size_ * period_);
+  for (uint8_t t = 0; t <= nb_ticks; t++) {
+    canvas.drawFastVLine(mark_px, graph_ystart + 4, -(graph_height + 4),
+                         COLORED);
+    if (mark_hours == 0) {
+      sprintf(buffer, "0");
+    } else {
+      if (major_hours < 24) {
+        sprintf(buffer, "%dh", mark_hours);
+      } else {
+        sprintf(buffer, "%dd", mark_hours / 24);
+      }
+    }
+    // int16_t tx, ty;
+    // uint16_t tw, th;
+    // canvas.getTextBounds(buffer, 0, 100, &tx, &ty, &tw, &th);
+    canvas.setCursor(mark_px - 6, screen_height - 2);
+    canvas.print(buffer);
+    mark_hours -= major_hours;
+    mark_px -= period_px;
+  }
 
   int16_t y1 = 0;
   for (size_t i = 0; i < size_; i++) {
