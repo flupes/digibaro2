@@ -10,14 +10,20 @@
 #include <epd4in2.h>
 
 #include "flash_debug.h"
+#include "permanent_samples.h"
+#include "rotating_samples.h"
+
+#define STRESS_TEST
 
 constexpr uint8_t kRtcPowerPin = 6;
 
 constexpr uint8_t kSwitchesPin[2] = {2, 3};
 
-extern void configureForSleep();
+extern void ConfigureForSleep();
 
-extern void configureDevices();
+extern void ConfigureDevices();
+
+extern uint8_t GetSwitchesState();
 
 // Global variables defined in devices.c
 
@@ -43,5 +49,16 @@ extern size_t nb_pins_to_pullup;
 extern DateTime boot_utc;
 
 extern FlashDebug flash_debug;
+
+// Specicy if the wakeup was due to the alarm or not (meaning switch change)
+extern volatile bool timer_wakeup;
+
+// Use USB Serial or not (depends on the boot state)
+extern bool serial_attached;
+
+// TODO : these should move into settings stored on flash!
+constexpr int8_t kTimezones_offset[] = {1, 0, -1, -4, -5, -6, -7, -8};
+
+constexpr int16_t kAltitudes_options[] = {0, 222, 445, 1620};
 
 #endif

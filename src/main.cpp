@@ -1,36 +1,46 @@
 
 // monitor with:
 // pio device monitor --port COM5 --baud 115200
+#include <avr/dtostrf.h>
 
 #include "Adafruit_GFX.h"
+#include "Fonts/ClearSans-Medium-10pt7b.h"
+#include "Fonts/ClearSans-Medium-12pt7b.h"
 #include "Fonts/ClearSans-Medium-24pt7b.h"
 
 #include "baro_sample.h"
 #include "digibaro.h"
-#include "permanent_samples.h"
+#include "graph_samples.h"
 #include "print_utils.h"
-#include "rotating_samples.h"
 #include "watchdog_timer.h"
-#include "flash_debug.h"
 
-// #define WAIT_FOR_SERIAL
-
-// #define USE_SWITCH
+// #define KEEP_AWAKE
 
 // canvas to draw on
 GFXcanvas1 *canvas;
 
 // Permanent samples written to flash
-PermanentSamples perm_samples(spi_flash);
-
-uint32_t spi_addr;
+PermanentSamples permanent_samples(spi_flash);
 
 // Rotating buffer of samples
-RotatingSamples ring_samples(spi_flash);
+RotatingSamples rotating_samples(spi_flash);
 
-const int8_t kTimeZone = -8;
-const int16_t kAltitude = 220;
-DateTime startup;
+#ifndef STRESS_TEST
+GraphSamples daily_buffer(5 * 60);
+GraphSamples weekly_buffer(20 * 60);
+#else
+GraphSamples daily_buffer(1 * 60);
+GraphSamples weekly_buffer(5 * 60);
+#endif
+
+int8_t timezone = -8;
+int16_t altitude = 222;
+
+enum DisplayMode : uint8_t { DAILY = 0, WEEKLY = 1, STATS = 2, INFO = 3 };
+
+uint32_t uptime_seconds = 0;
+uint32_t awake_centiseconds = 0;
+uint32_t loop_counter = 0;
 
 extern "C" char *sbrk(int i);
 
@@ -39,23 +49,22 @@ int FreeRam() {
   return &stack_dummy - sbrk(0);
 }
 
-#define COLORED 0
-#define UNCOLORED 1
-
 void setup() {
   Serial.begin(115200);
 
-#ifdef WAIT_FOR_SERIAL
   uint8_t count = 0;
   while (!Serial && count < 12) {
     delay(1000);
     count++;
   }
-#endif
+  if (!Serial) {
+    USBDevice.detach();
+    serial_attached = false;
+  }
 
   PRINTLN("Digibaro Starting...");
 
-  configureDevices();
+  ConfigureDevices();
 
   ep42_display.ClearFrame();
   PRINT("Free RAM before Canvas allocation: ");
@@ -64,44 +73,45 @@ void setup() {
   PRINT("Free RAM after Canvas allocation: ");
   PRINTLN(FreeRam());
 
-  canvas->setTextColor(COLORED);
+#ifndef KEEP_AWAKE
+  canvas->setTextColor(0);
   canvas->setTextSize(1);
   canvas->setTextWrap(false);
   canvas->setFont(&ClearSans_Medium24pt7b);
 
-  canvas->fillScreen(UNCOLORED);
+  canvas->fillScreen(1);
   canvas->setCursor(4, 32);
   canvas->print("Waiting 5s");
-  ep42_display.SetPartialWindow(canvas->getBuffer(), 0, 0, 400, 300);
-  ep42_display.DisplayFrame();
-  PRINTLN("frame should be displayed...");
-  // crucial delay to let us chance to reflash!
-  delay(5 * 1000);
+  ep42_display.DisplayFrame(canvas->getBuffer());
+
+// crucial delay to let us chance to reflash!
+// delay(5 * 1000);
+#endif
+
+  uint32_t last_index = rotating_samples.begin();
+  PRINT("last rotating sample index = ");
+  PRINTLN(last_index);
 
   PRINT("Permanent sample start addr = ");
   PRINTLN(kPermanentSamplesAddrStart);
-  uint32_t nb_samples = perm_samples.begin();
+  uint32_t nb_samples = permanent_samples.begin();
   PRINT("Permanent sample retuned # = ");
   PRINTLN(nb_samples);
-  // PRINT("Flash address start =  ");
-  // spi_addr =
-  //     nb_samples * kPermanentSampleBytesLength + kPermanentSamplesAddrStart;
-  // PRINTLN(spi_addr);
 
-  wdt_configure(9);
-
+  // Configure the watchdog to 130s (two full cycles)
+  wdt_configure(11);
 }
 
-void collectSample(DateTime &dt) {
+BaroSample CollectSample(DateTime &dt) {
   bme.PerformMeasurement();
 
   BaroSample sample(dt.unixtime(), bme.GetPressure() / 100,
-                    bme.GetTemperature(), bme.GetHumidity() / 10, kAltitude,
-                    kTimeZone);
+                    bme.GetTemperature(), bme.GetHumidity() / 10, altitude,
+                    timezone);
 
   if (Serial) {
     char buffer[64];
-    DateTime local = dt.getLocalTime(kTimeZone);
+    DateTime local = dt.getLocalTime(timezone);
     local.toString(buffer);
     Serial.print("collect_sample at time = ");
     Serial.print(buffer);
@@ -113,7 +123,7 @@ void collectSample(DateTime &dt) {
     Serial.print(bme.GetHumidity());
     Serial.println();
     Serial.print("--> sample created at elevation = ");
-    Serial.print(kAltitude);
+    Serial.print(altitude);
     Serial.print(" with seconds = ");
     Serial.print(sample.GetTimestamp());
     Serial.print(" : press = ");
@@ -124,56 +134,35 @@ void collectSample(DateTime &dt) {
     Serial.print(sample.HumidityPercent());
     Serial.println();
   }
-  char buffer[64];
-  sprintf(buffer, "pressure: %d", (int)sample.PressureMilliBar());
-  canvas->setCursor(4, 140);
-  canvas->print(buffer);
-  sprintf(buffer, "temperature: %d", (int)sample.TemperatureDegCelcius());
-  canvas->setCursor(4, 190);
-  canvas->print(buffer);
-  sprintf(buffer, "humitidy: %d", (int)sample.HumidityPercent());
-  canvas->setCursor(4, 240);
-  canvas->print(buffer);
 
-  // uint32_t count = perm_samples.AddSample(sample);
-  // if (Serial) {
-  //   Serial.print("Sample #  ");
-  //   Serial.print(count);
-  //   Serial.print(" written at addr = ");
-  //   Serial.println(perm_samples.GetLastSampleAddr());
-  // }
+#ifndef STRESS_TEST
+  if (dt.minute() % 5 == 0) {
+    rotating_samples.AddSample(sample);
+  }
+  if (dt.minute() == 0) {
+    permanent_samples.AddSample(sample);
+  }
+#else
+  uint32_t index = rotating_samples.AddSample(sample);
+  DEBUG("new rotating sample index", index);
+  if (dt.minute() % 15 == 0) {
+    uint32_t count = permanent_samples.AddSample(sample);
+    if (Serial) {
+      Serial.print("Sample #  ");
+      Serial.print(count);
+      Serial.print(" written at addr = ");
+      Serial.println(permanent_samples.GetLastSampleAddr());
+    }
+  }
+#endif
+  return sample;
 }
 
-void loop() {
-  static uint32_t counter = 0;
-  static uint32_t awake_ms = 0;
-  static uint32_t after_awake = 0;
+void DisplayInfo(DateTime &local, BaroSample &last) {
+  char buffer[32];
 
-  if (!after_awake) after_awake = millis();
+  canvas->setFont(&ClearSans_Medium24pt7b);
 
-  counter++;
-  // spi_flash.writeULong(spi_addr, counter);
-  // spi_addr += 4;
-
-  DateTime utc = ds3231_rtc.now();
-  // if (counter % 10 == 0) {
-  //   // re-sync the onboard RTC occasionaly
-  //   onboard_rtc.setTime(utc.hour(), utc.minute(), utc.second());
-  //   onboard_rtc.setDate(utc.day(), utc.month(), utc.year());
-  // }
-
-  // spi_flash.writeULong(spi_addr, utc.unixtime());
-  // spi_addr += 4;
-  char buffer[64];
-  DateTime local = utc.getLocalTime(-8);
-  local.toString(buffer);
-  PRINT("current time = ");
-  PRINTLN(buffer);
-
-  // spi_flash.writeByte(spi_addr++, 1);
-  // Display something to prove we are alive
-  // epd.ClearFrame();
-  canvas->fillScreen(UNCOLORED);
   sprintf(buffer, "Date: %04d-%02d-%02d", local.year(), local.month(),
           local.day());
   canvas->setCursor(4, 40);
@@ -184,69 +173,171 @@ void loop() {
   canvas->setCursor(4, 90);
   canvas->print(buffer);
 
-  sprintf(buffer, "%lu %lus %luh", counter, awake_ms / 1000,
-          (utc.secondstime() - boot_utc.secondstime()) / 3600);
-  canvas->setCursor(5, 290);
+  sprintf(buffer, "pressure: %d", (int)last.PressureMilliBar());
+  canvas->setCursor(4, 140);
+  canvas->print(buffer);
+  sprintf(buffer, "temperature: %d", (int)last.TemperatureDegCelcius());
+  canvas->setCursor(4, 190);
+  canvas->print(buffer);
+  sprintf(buffer, "humitidy: %d", (int)last.HumidityPercent());
+  canvas->setCursor(4, 240);
+  canvas->print(buffer);
+}
+
+void DisplayStats(DateTime &local, BaroSample &last) {
+  char buffer[56];
+  char pressure_str[8];
+  char temperature_str[8];
+  char humidity_str[8];
+
+  canvas->setFont(&ClearSans_Medium12pt7b);
+
+  DateTime utc = DateTime(last.GetTimestamp());
+  sprintf(buffer, "UTC : %04d-%02d-%02d %02d:%02d:%02d | Alt=%dm", utc.year(),
+          utc.month(), utc.day(), utc.hour(), utc.minute(), utc.second(),
+          altitude);
+  canvas->setCursor(4, 15);
   canvas->print(buffer);
 
-  // spi_flash.writeByte(spi_addr++, 2);
-  collectSample(utc);
-  // spi_flash.writeByte(spi_addr++, 3);
+  sprintf(buffer, "Local: %04d-%02d-%02d %02d:%02d:%02d | TZ=%d", local.year(),
+          local.month(), local.day(), local.hour(), local.minute(),
+          local.second(), timezone);
+  canvas->setCursor(4, 35);
+  canvas->print(buffer);
 
-  ep42_display.SetPartialWindow(canvas->getBuffer(), 0, 0, 400, 300);
-  ep42_display.DisplayFrame();
+  dtostrf(last.PressureMilliBar(), 5, 1, pressure_str);
+  dtostrf(last.TemperatureDegCelcius(), 4, 1, temperature_str);
+  dtostrf(last.HumidityPercent(), 4, 1, humidity_str);
+  sprintf(buffer, "Last: p=%s mb | t=%s C | h=%s %%", pressure_str,
+          temperature_str, humidity_str);
+  canvas->setCursor(4, 55);
+  canvas->print(buffer);
 
-  // spi_flash.writeByte(spi_addr++, 4);
+  uptime_seconds = utc.secondstime() - boot_utc.secondstime();
+  TimeSpan up = TimeSpan(uptime_seconds);
+  sprintf(buffer, "loop counter=%ld | awake=%lds", loop_counter,
+          awake_centiseconds / 100);
+  canvas->setCursor(4, 75);
+  canvas->print(buffer);
+  sprintf(buffer, "uptime: %dd %dh %dm (%lds)", up.days(), up.hours(),
+          up.minutes(), uptime_seconds);
+  canvas->setCursor(4, 95);
+  canvas->print(buffer);
+}
 
-  PRINTLN("Go to sleep for another 15s...")
-  configureForSleep();
+void Display(DateTime &local, BaroSample &sample, uint8_t mode) {
+  uint32_t count;
 
-  // spi_flash.writeByte(spi_addr++, 5);
-  flash_debug.Message(FlashDebug::STANDBY, 1, counter);
+  ep42_display.ConfigAndSendOldBuffer(canvas->getBuffer());
 
-  awake_ms += (millis() - after_awake);
+  canvas->fillScreen(1);
+  DEBUG("display mode", mode);
 
-  onboard_rtc.standbyMode();
-  // now we are awake again!
-  onboard_rtc.detachInterrupt();
-  for (size_t p = 0; p < 2; p++) {
-    detachInterrupt(kSwitchesPin[p]);
+  switch (mode) {
+    case DisplayMode::INFO:
+      DisplayInfo(local, sample);
+      break;
+    case DisplayMode::STATS:
+      DisplayStats(local, sample);
+      break;
+    case DisplayMode::DAILY:
+      count = daily_buffer.Fill(rotating_samples, sample.GetTimestamp());
+      DEBUG("daily count", count);
+      if (count > 0) {
+        daily_buffer.Draw(*canvas, 1, 0);
+      }
+      break;
+    case DisplayMode::WEEKLY:
+      weekly_buffer.Fill(rotating_samples, sample.GetTimestamp());
+      weekly_buffer.Draw(*canvas, 1, 0);
+      break;
+    default:
+      break;
   }
-  after_awake = millis();
+
+  ep42_display.SendNewBufferAndRefresh(canvas->getBuffer());
+  ep42_display.Sleep();
+}
+
+void loop() {
   wdt_reset();
 
-  // SPI.begin();
-  // spi_flash.powerUp();
-  // spi_flash.writeByte(spi_addr++, 6);
-  flash_debug
-      .Message(FlashDebug::WAKEUP, 1, awake_ms / 1000);
-
-          USBDevice.init();
-  USBDevice.attach();
-#ifdef WAIT_FOR_SERIAL
-  uint8_t count = 0;
-  while (!Serial && count < 10) {
-    delay(1000);
-    count++;
-  }
-  delay(2000);
-#endif
-
-  spi_flash.writeByte(spi_addr++, 7);
-  PRINTLN("Just woke up!");
+  static uint32_t after_awake = 0;
+  if (!after_awake) after_awake = millis();
+  loop_counter++;
 
   // Enable power to the external RTC and display
   digitalWrite(kRtcPowerPin, HIGH);
-  // It is necessary to re-enable the I2C bus (why?)
-  // Wire.begin();
-  // Wait at least 250ms for the RTC to get up to speed
-  delay(300);
+  delay(100);
 
-  PRINTLN("Restart e-Paper...");
-  if (ep42_display.Init() != 0) {
-    PRINTLN("e-Paper init failed");
-    while (1)
-      ;
+  DateTime utc = ds3231_rtc.now();
+  if (loop_counter % 60 == 0) {
+    // re-sync the onboard RTC every hour
+    onboard_rtc.setTime(utc.hour(), utc.minute(), utc.second());
+    onboard_rtc.setDate(utc.day(), utc.month(), uint8_t(utc.year() - 2000));
   }
-  spi_flash.writeByte(spi_addr++, 8);
+
+  char buffer[64];
+  DateTime local = utc.getLocalTime(timezone);
+  local.toString(buffer);
+  PRINT("current time = ");
+  PRINTLN(buffer);
+
+  uint8_t wake_switch_state = GetSwitchesState();
+
+  BaroSample last_measurement = CollectSample(utc);
+
+#ifdef STRESS_TEST
+  uint8_t period = 1;
+#else
+  uint8_t period = 15;
+#endif
+  if (!timer_wakeup || utc.minute() % period == 0) {
+    // Update display only to the period in minute defined above
+    // Or if awakened by external switch input
+    if (ep42_display.Init() != 0) {
+      PRINTLN("e-Paper init failed");
+      while (1)
+        ;
+    }
+
+    Display(local, last_measurement, wake_switch_state);
+    // ep42_display.SetPartialWindow(canvas->getBuffer(), 0, 0, 400, 300);
+    // ep42_display.DisplayFrame();
+  }
+
+  uint8_t new_switch_state = GetSwitchesState();
+#ifndef KEEP_AWAKE
+  if (new_switch_state == wake_switch_state) {
+    // Only go in standby mode if switches were not modified
+    // Setup for standby mode
+    ConfigureForSleep();
+    flash_debug.Message(FlashDebug::STANDBY, 1, loop_counter);
+    awake_centiseconds += ((millis() - after_awake)) / 10;
+
+    // Go in standby mode for 1 minute!
+    onboard_rtc.standbyMode();
+
+    // now we are awake again!
+    onboard_rtc.detachInterrupt();
+    for (size_t p = 0; p < 2; p++) {
+      detachInterrupt(kSwitchesPin[p]);
+    }
+    after_awake = millis();
+    digitalWrite(LED_BUILTIN, HIGH);
+    flash_debug.Message(FlashDebug::WAKEUP, 1, awake_centiseconds / 100);
+    PRINTLN("Just woke up!");
+    if (serial_attached) {
+      USBDevice.init();
+      USBDevice.attach();
+      uint8_t count = 0;
+      while (!Serial && count < 9) {
+        delay(1000);
+        count++;
+      }
+    }
+  }
+#else
+  delay(10 * 1000);
+#endif
 }

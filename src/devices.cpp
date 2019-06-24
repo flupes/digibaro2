@@ -25,7 +25,7 @@ uint8_t pins_to_pullup[] = {0,  1,  5,  7,  8,  9,  10, 11, 12, 14, 15, 16, 17,
 
 size_t nb_pins_to_pullup = sizeof(pins_to_pullup);
 
-void configureDevices() {
+void ConfigureDevices() {
 
   if (spi_flash.begin()) {
     PRINTLN("Serial Flash started.")
@@ -59,15 +59,7 @@ void configureDevices() {
   PRINTLN(buffer);
 
   // Set time of internal clock
-  PRINT("onboard_rtc.setTime(");
-  PRINT(boot_utc.hour());
-  PRINT(", ");
-  PRINT(boot_utc.minute());
-  PRINT(", ");
-  PRINT(boot_utc.second());
-  PRINTLN(")");
-  onboard_rtc.setTime(boot_utc.hour(), boot_utc.minute(), boot_utc.second());
-  PRINT("onboard_rtc.setDime(");
+  PRINT("onboard_rtc.setDate(");
   PRINT(boot_utc.day());
   PRINT(", ");
   PRINT(boot_utc.month());
@@ -75,7 +67,21 @@ void configureDevices() {
   PRINT(boot_utc.year()-2000);
   PRINTLN(")");
   onboard_rtc.setDate(boot_utc.day(), boot_utc.month(), boot_utc.year()-2000);
-
+  PRINT("onboard_rtc.setTime(");
+  PRINT(boot_utc.hour());
+  PRINT(", ");
+  PRINT(boot_utc.minute());
+  PRINT(", ");
+  PRINT(boot_utc.second());
+  PRINTLN(")");
+  uint8_t minutes = boot_utc.minute();
+  uint8_t seconds = boot_utc.second() + 1;
+  if (seconds == 60) {
+    seconds = 0;
+    minutes++;
+  }
+  onboard_rtc.setTime(boot_utc.hour(), minutes, seconds);
+  
   flash_debug.SetRTC(&onboard_rtc);
   
   PRINT("Configure unused pins:");
@@ -120,4 +126,12 @@ void configureDevices() {
   // uint32_t index = perm_samples.begin();
   // PRINT("Last retrieved sample index = ");
   // PRINTLN(index);
+}
+
+uint8_t GetSwitchesState() 
+{
+  uint8_t state = 0;
+  state = digitalRead(kSwitchesPin[0]) << 1;
+  state |= digitalRead(kSwitchesPin[1]) & 0x01;
+  return state;
 }

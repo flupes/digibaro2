@@ -3,7 +3,11 @@
 #include "digibaro.h"
 #include "print_utils.h"
 
-void alarmMatch() { digitalWrite(LED_BUILTIN, HIGH); }
+volatile bool timer_wakeup = false;
+
+bool serial_attached = false;
+
+void alarmMatch() { timer_wakeup = true; }
 
 void switchChange() {
   // We clear the interrupt manually (code from WInterrupts.c)
@@ -16,26 +20,13 @@ void switchChange() {
   }
 }
 
-void configureForSleep() {
-  PRINT("Going to sleep... ");
-  // we could get the time from the internal RTC, but
-  // this way we check that the external is still responding...
-  /*
-  We should use the external RTC to get on accurate minutes.
-  But it is possible to just use the internal RTC to wait a relative
-  time.
-  DateTime utc = ds3231_rtc.now();
-  uint8_t alarm_seconds = utc.second() + 10;
-  PRINT("Wake up at seconds = ");
-  PRINTLN(utc.second());  */
-  uint8_t alarm_seconds = onboard_rtc.getSeconds() + 10;
-
-  if (alarm_seconds > 59) alarm_seconds -= 60;
-
+void ConfigureForSleep() {
   ep42_display.Sleep();
-  delay(100);
 
-  onboard_rtc.setAlarmSeconds(alarm_seconds);
+  timer_wakeup = false;
+  
+  // Configure wake up for the next minute
+  onboard_rtc.setAlarmSeconds(0);
   onboard_rtc.enableAlarm(onboard_rtc.MATCH_SS);
   onboard_rtc.attachInterrupt(alarmMatch);
   digitalWrite(LED_BUILTIN, LOW);
@@ -56,5 +47,5 @@ void configureForSleep() {
   // the RTC will consume a lot of current from the coin battery
   digitalWrite(kRtcPowerPin, LOW);
 
-  USBDevice.detach();
+  if (serial_attached) USBDevice.detach();
 }
