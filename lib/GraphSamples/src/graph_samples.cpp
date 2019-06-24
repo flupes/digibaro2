@@ -20,15 +20,26 @@ bool GraphSamples::Draw(GFXcanvas1 &canvas, uint8_t bg_color, uint8_t fg_color) 
   canvas.drawFastVLine(graph_xstart, graph_ystart, -graph_height, fg_color);
 
   label_spec lbl;
-  loose_label(min_, max_, 5, lbl);
+  uint32_t min = min_;
+  uint32_t max = max_;
+
+  // WARNING: this will only work for PRESSURE (that are multiplied by 10)
+  if (max_ - min_  < 40 ) {
+    min -= 20;
+    max += 20;
+  }
+
+  loose_label(min, max, 5, lbl);
   // DEBUG("serie_min", min_);
   // DEBUG("serie_max", max_);
+  // DEBUG("set min", min);
+  // DEBUG("set max", max);
   // DEBUG("label_min", lbl.min_label);
   // DEBUG("label_max", lbl.max_label);
   // DEBUG("increment", lbl.increment);
   // DEBUG("nb_marks", lbl.nb_marks);
 
-  uint32_t start = millis();
+  // uint32_t start = millis();
   char buffer[8];
   canvas.setTextColor(fg_color);
   canvas.setTextSize(1);
@@ -55,9 +66,9 @@ bool GraphSamples::Draw(GFXcanvas1 &canvas, uint8_t bg_color, uint8_t fg_color) 
     y -= step;
     tick += lbl.increment;
   }
-  uint32_t stop = millis();
-  PRINT("graph marks elapsed (ms) : ");
-  PRINTLN(stop - start);
+  // uint32_t stop = millis();
+  // PRINT("graph marks elapsed (ms) : ");
+  // PRINTLN(stop - start);
 
   uint32_t series_hours = (size_ * period_) / 3600;
   uint8_t major_hours;
@@ -113,7 +124,7 @@ bool GraphSamples::Draw(GFXcanvas1 &canvas, uint8_t bg_color, uint8_t fg_color) 
     }
 #else
     if (data != INT16_MIN) {
-      int16_t y = 300 - 300 * (data - min_) / (max_ - min_);
+      int16_t y = 300 - 300 * (data - min) / (max - min);
       canvas.drawFastVLine(i + 50, y, 300, fg_color);
     }
 #endif
