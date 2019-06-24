@@ -70,8 +70,8 @@ void setup() {
   PRINT("last rotating sample index = ");
   PRINTLN(last_index);
 
-  daily_buffer.Fill(&rotating_samples, 1556427000);
-  weekly_buffer.Fill(&rotating_samples, 1556427000);
+  daily_buffer.Fill(rotating_samples, 1556427000);
+  weekly_buffer.Fill(rotating_samples, 1556427000);
 
   PRINTLN("Buffers filled!");
 }

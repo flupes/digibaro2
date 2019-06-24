@@ -17,7 +17,7 @@ int divRoundClosest(const int n, const int d) {
   return ((n < 0) ^ (d < 0)) ? ((n - d / 2) / d) : ((n + d / 2) / d);
 }
 
-uint32_t DisplaySamples::Fill(RotatingSamples *src, uint32_t now,
+uint32_t DisplaySamples::Fill(RotatingSamples &src, uint32_t now,
                               SampleDataType dt) {
   type_ = dt;
   // Set the all buffer to zero
@@ -30,7 +30,7 @@ uint32_t DisplaySamples::Fill(RotatingSamples *src, uint32_t now,
   last_ts_ = now;
   first_ = 0;
 
-  uint32_t flash_index = src->GetReverseIndexIterator();
+  uint32_t flash_index = src.GetReverseIndexIterator();
   if (flash_index == kInvalidInt24) return count;
 
   int32_t accumulator = 0;
@@ -46,7 +46,7 @@ uint32_t DisplaySamples::Fill(RotatingSamples *src, uint32_t now,
   // Serial.println(first_ts);
 
   while (!done) {
-    BaroSample sample = src->GetSampleAtIndex(flash_index);
+    BaroSample sample = src.GetSampleAtIndex(flash_index);
     sample_ts = sample.GetTimestamp();
 
     if (first_ts <= sample_ts && sample_ts <= last_ts_) {
@@ -100,7 +100,7 @@ uint32_t DisplaySamples::Fill(RotatingSamples *src, uint32_t now,
         // Serial.println(bucket_count);
       }
     }
-    flash_index = src->GetPreviousIndex();
+    flash_index = src.GetPreviousIndex();
     if (flash_index == kInvalidInt24) done = true;
 
     if (sample_ts < first_ts) done = true;

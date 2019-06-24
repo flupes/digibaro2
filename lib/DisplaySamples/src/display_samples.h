@@ -22,7 +22,7 @@ class DisplaySamples {
    * Pushes the samples to the left if now is higher than the last sample.
    * Add unvalid data for samples that are skipped on flash.
    */
-  uint32_t Fill(RotatingSamples *src, uint32_t now,
+  uint32_t Fill(RotatingSamples &src, uint32_t now,
                 SampleDataType data_type = PRESSURE);
 
   /*

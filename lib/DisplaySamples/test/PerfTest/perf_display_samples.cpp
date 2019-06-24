@@ -14,7 +14,7 @@ pio ci .\test\PerfTest --board=zeroUSB -l src -l ..\BaroUtils -l ..\BaroSample
 SPIFlash flash(kMiniUltraProOnBoardChipSelectPin);
 
 // Hour twelthes samples on flash
-RotatingSamples rotating_samples(flash,404);
+RotatingSamples rotating_samples(flash, 492);
 
 // Two buffers with different periods
 DisplaySamples daily_buffer(5 * 60);
@@ -39,8 +39,8 @@ void setup() {
   
   uint32_t start = millis();
 
-  uint32_t daily_length = daily_buffer.Fill(&rotating_samples, 1556427000);
-  uint32_t weekly_length = weekly_buffer.Fill(&rotating_samples, 1556427000);
+  uint32_t daily_length = daily_buffer.Fill(rotating_samples, 1556427000);
+  uint32_t weekly_length = weekly_buffer.Fill(rotating_samples, 1556427000);
 
   uint32_t stop = millis();
   PRINT("Reading from flash time (ms) = ");
