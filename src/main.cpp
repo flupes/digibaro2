@@ -37,7 +37,7 @@ int8_t timezone = 0;
 int16_t altitude = 0;
 uint32_t samples_on_flash = 0;
 
-enum DisplayMode : uint8_t { WEEKLY = 0, DAILY = 1, STATS = 2, INFO = 3 };
+enum DisplayMode : uint8_t { WEEKLY = 0, DAILY = 1, INFO = 2, STATS = 3 };
 
 uint32_t uptime_seconds = 0;
 uint32_t awake_centiseconds = 0;
@@ -61,7 +61,7 @@ void GetSettingsFromDip()
   DEBUG("tz_code", tz_code);
   DEBUG("dst_mode", dst_mode);
   altitude = kAltitudes_options[alt_code];
-  timezone = kTimezones_offset[tz_code] - dst_mode;
+  timezone = kTimezones_offset[tz_code] + dst_mode;
 }
 
 void setup() {
@@ -81,7 +81,7 @@ void setup() {
 
   ConfigureDevices();
   GetSettingsFromDip();
-  
+
   ep42_display.ClearFrame();
   PRINT("Free RAM before Canvas allocation: ");
   PRINTLN(FreeRam());
