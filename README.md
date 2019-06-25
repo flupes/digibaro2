@@ -4,7 +4,7 @@ Digital Barometer v2 (with e-Paper display).
 
 Status:
 - all supporting custom libraries are now written and include tests
-- main application *not* developed yet
+- main application starting to take shape
 - schematic ready with preliminary board design
 - 3D enclosure concept (wood enclosure for next iteration)
 
@@ -142,3 +142,11 @@ series, no user interface per say. This allowed him to complete the project
 (unlike my digibaro v1). Congratulations! In addition, he created a nice wooden
 enclosure.
 -->
+
+## Build
+
+Currently digibaro2 is built using platformIO. This mainly constrains the
+directory structure. Each test program show in the comments the command
+to build it. The main application uses the platormio.ini definitions and
+calls an extra script (version.py) to inject the git hash. This last part
+is not directly portable to another build system.

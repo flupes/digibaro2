@@ -14,6 +14,8 @@
 #include "print_utils.h"
 #include "watchdog_timer.h"
 
+#define VERSION "3ec72231+"
+
 // #define KEEP_AWAKE
 
 // canvas to draw on
@@ -35,8 +37,9 @@ GraphSamples weekly_buffer(5 * 60);
 
 int8_t timezone = -8;
 int16_t altitude = 222;
+uint32_t samples_on_flash = 0;
 
-enum DisplayMode : uint8_t { DAILY = 0, WEEKLY = 1, STATS = 2, INFO = 3 };
+enum DisplayMode : uint8_t { WEEKLY = 0, DAILY = 1, STATS = 2, INFO = 3 };
 
 uint32_t uptime_seconds = 0;
 uint32_t awake_centiseconds = 0;
@@ -94,9 +97,9 @@ void setup() {
 
   PRINT("Permanent sample start addr = ");
   PRINTLN(kPermanentSamplesAddrStart);
-  uint32_t nb_samples = permanent_samples.begin();
+ samples_on_flash = permanent_samples.begin();
   PRINT("Permanent sample retuned # = ");
-  PRINTLN(nb_samples);
+  PRINTLN(samples_on_flash);
 
   // Configure the watchdog to 130s (two full cycles)
   wdt_configure(11);
@@ -141,15 +144,19 @@ BaroSample CollectSample(DateTime &dt) {
   }
   if (dt.minute() == 0) {
     permanent_samples.AddSample(sample);
+    flash_debug.Message(FlashDebug::STEP, 11, awake_centiseconds / (100 * 60));
   }
 #else
   uint32_t index = rotating_samples.AddSample(sample);
   DEBUG("new rotating sample index", index);
   if (dt.minute() % 15 == 0) {
-    uint32_t count = permanent_samples.AddSample(sample);
-    if (Serial) {
+    samples_on_flash = permanent_samples.AddSample(sample);
+
+    flash_debug.Message(FlashDebug::STEP, 11, awake_centiseconds/(100*60));
+
+     if (Serial) {
       Serial.print("Sample #  ");
-      Serial.print(count);
+      Serial.print(samples_on_flash);
       Serial.print(" written at addr = ");
       Serial.println(permanent_samples.GetLastSampleAddr());
     }
@@ -158,7 +165,7 @@ BaroSample CollectSample(DateTime &dt) {
   return sample;
 }
 
-void DisplayInfo(DateTime &local, BaroSample &last) {
+void DisplayStats(DateTime &local, BaroSample &last) {
   char buffer[32];
 
   canvas->setFont(&ClearSans_Medium24pt7b);
@@ -184,7 +191,7 @@ void DisplayInfo(DateTime &local, BaroSample &last) {
   canvas->print(buffer);
 }
 
-void DisplayStats(DateTime &local, BaroSample &last) {
+void DisplayInfo(DateTime &local, BaroSample &last) {
   char buffer[56];
   char pressure_str[8];
   char temperature_str[8];
@@ -213,15 +220,21 @@ void DisplayStats(DateTime &local, BaroSample &last) {
   canvas->setCursor(4, 55);
   canvas->print(buffer);
 
+  sprintf(buffer, "# samples stored on flash = %d", samples_on_flash);
+  canvas->setCursor(4, 75);
+  canvas->print(buffer);
   uptime_seconds = utc.secondstime() - boot_utc.secondstime();
   TimeSpan up = TimeSpan(uptime_seconds);
   sprintf(buffer, "loop counter=%ld | awake=%lds", loop_counter,
           awake_centiseconds / 100);
-  canvas->setCursor(4, 75);
+  canvas->setCursor(4, 95);
   canvas->print(buffer);
   sprintf(buffer, "uptime: %dd %dh %dm (%lds)", up.days(), up.hours(),
           up.minutes(), uptime_seconds);
-  canvas->setCursor(4, 95);
+  canvas->setCursor(4, 115);
+  canvas->print(buffer);
+  sprintf(buffer, "build: %s (%s)", DIGIBARO_VERSION, __DATE__);
+  canvas->setCursor(4, 135);
   canvas->print(buffer);
 }
 
@@ -260,11 +273,10 @@ void Display(DateTime &local, BaroSample &sample, uint8_t mode) {
 }
 
 void loop() {
-  wdt_reset();
-
   static uint32_t after_awake = 0;
-  if (!after_awake) after_awake = millis();
+  wdt_reset();
   loop_counter++;
+  if (!after_awake) after_awake = millis();
 
   // Enable power to the external RTC and display
   digitalWrite(kRtcPowerPin, HIGH);
@@ -312,7 +324,7 @@ void loop() {
     // Only go in standby mode if switches were not modified
     // Setup for standby mode
     ConfigureForSleep();
-    flash_debug.Message(FlashDebug::STANDBY, 1, loop_counter);
+    // flash_debug.Message(FlashDebug::STANDBY, 1, loop_counter);
     awake_centiseconds += ((millis() - after_awake)) / 10;
 
     // Go in standby mode for 1 minute!
@@ -325,7 +337,7 @@ void loop() {
     }
     after_awake = millis();
     digitalWrite(LED_BUILTIN, HIGH);
-    flash_debug.Message(FlashDebug::WAKEUP, 1, awake_centiseconds / 100);
+    // flash_debug.Message(FlashDebug::WAKEUP, 1, awake_centiseconds / (100*60));
     PRINTLN("Just woke up!");
     if (serial_attached) {
       USBDevice.init();
