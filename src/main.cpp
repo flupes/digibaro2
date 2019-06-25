@@ -1,6 +1,6 @@
-
 // monitor with:
 // pio device monitor --port COM5 --baud 115200
+
 #include <avr/dtostrf.h>
 
 #include "Adafruit_GFX.h"
@@ -13,8 +13,6 @@
 #include "graph_samples.h"
 #include "print_utils.h"
 #include "watchdog_timer.h"
-
-#define VERSION "3ec72231+"
 
 // #define KEEP_AWAKE
 
@@ -35,8 +33,8 @@ GraphSamples daily_buffer(1 * 60);
 GraphSamples weekly_buffer(5 * 60);
 #endif
 
-int8_t timezone = -8;
-int16_t altitude = 222;
+int8_t timezone = 0;
+int16_t altitude = 0;
 uint32_t samples_on_flash = 0;
 
 enum DisplayMode : uint8_t { WEEKLY = 0, DAILY = 1, STATS = 2, INFO = 3 };
@@ -50,6 +48,20 @@ extern "C" char *sbrk(int i);
 int FreeRam() {
   char stack_dummy = 0;
   return &stack_dummy - sbrk(0);
+}
+
+void GetSettingsFromDip()
+{
+  uint8_t dip_switches_state = GetDipState();
+  DEBUG("DIP state = ", dip_switches_state);
+  uint8_t alt_code = dip_switches_state >> 4;
+  uint8_t tz_code = (0x0F & dip_switches_state) >> 1;
+  uint8_t dst_mode = 0x01 & dip_switches_state;
+  DEBUG("alt_code", alt_code);
+  DEBUG("tz_code", tz_code);
+  DEBUG("dst_mode", dst_mode);
+  altitude = kAltitudes_options[alt_code];
+  timezone = kTimezones_offset[tz_code] - dst_mode;
 }
 
 void setup() {
@@ -68,7 +80,8 @@ void setup() {
   PRINTLN("Digibaro Starting...");
 
   ConfigureDevices();
-
+  GetSettingsFromDip();
+  
   ep42_display.ClearFrame();
   PRINT("Free RAM before Canvas allocation: ");
   PRINTLN(FreeRam());
@@ -97,7 +110,7 @@ void setup() {
 
   PRINT("Permanent sample start addr = ");
   PRINTLN(kPermanentSamplesAddrStart);
- samples_on_flash = permanent_samples.begin();
+  samples_on_flash = permanent_samples.begin();
   PRINT("Permanent sample retuned # = ");
   PRINTLN(samples_on_flash);
 
@@ -152,9 +165,9 @@ BaroSample CollectSample(DateTime &dt) {
   if (dt.minute() % 15 == 0) {
     samples_on_flash = permanent_samples.AddSample(sample);
 
-    flash_debug.Message(FlashDebug::STEP, 11, awake_centiseconds/(100*60));
+    flash_debug.Message(FlashDebug::STEP, 11, awake_centiseconds / (100 * 60));
 
-     if (Serial) {
+    if (Serial) {
       Serial.print("Sample #  ");
       Serial.print(samples_on_flash);
       Serial.print(" written at addr = ");
@@ -220,7 +233,7 @@ void DisplayInfo(DateTime &local, BaroSample &last) {
   canvas->setCursor(4, 55);
   canvas->print(buffer);
 
-  sprintf(buffer, "# samples stored on flash = %d", samples_on_flash);
+  sprintf(buffer, "# samples stored on flash = %lu", samples_on_flash);
   canvas->setCursor(4, 75);
   canvas->print(buffer);
   uptime_seconds = utc.secondstime() - boot_utc.secondstime();
@@ -229,7 +242,7 @@ void DisplayInfo(DateTime &local, BaroSample &last) {
           awake_centiseconds / 100);
   canvas->setCursor(4, 95);
   canvas->print(buffer);
-  sprintf(buffer, "uptime: %dd %dh %dm (%lds)", up.days(), up.hours(),
+  sprintf(buffer, "uptime: %dd %dh %dm (%lus)", up.days(), up.hours(),
           up.minutes(), uptime_seconds);
   canvas->setCursor(4, 115);
   canvas->print(buffer);
@@ -296,6 +309,7 @@ void loop() {
   PRINTLN(buffer);
 
   uint8_t wake_switch_state = GetSwitchesState();
+  GetSettingsFromDip();
 
   BaroSample last_measurement = CollectSample(utc);
 
@@ -337,7 +351,8 @@ void loop() {
     }
     after_awake = millis();
     digitalWrite(LED_BUILTIN, HIGH);
-    // flash_debug.Message(FlashDebug::WAKEUP, 1, awake_centiseconds / (100*60));
+    // flash_debug.Message(FlashDebug::WAKEUP, 1, awake_centiseconds /
+    // (100*60));
     PRINTLN("Just woke up!");
     if (serial_attached) {
       USBDevice.init();

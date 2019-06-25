@@ -20,13 +20,13 @@ FlashDebug flash_debug;
  */
 SPIFlash spi_flash(kMiniUltraProOnBoardChipSelectPin);
 
-uint8_t pins_to_pullup[] = {0,  1,  5,  7,  8,  9,  10, 11, 12, 14, 15, 16, 17,
-                            18, 19, 22, 25, 26, 34, 35, 36, 37, 38, 39, 40, 41};
+// TODO : need to check if 19 = A5 should be pulled up (probably not!)
+uint8_t pins_to_pullup[] = {0,  1,  5,  7,  8,  9,  10, 14, 19, 22,
+                            25, 26, 34, 35, 36, 37, 38, 39, 40, 41};
 
 size_t nb_pins_to_pullup = sizeof(pins_to_pullup);
 
 void ConfigureDevices() {
-
   if (spi_flash.begin()) {
     PRINTLN("Serial Flash started.")
   } else {
@@ -64,9 +64,9 @@ void ConfigureDevices() {
   PRINT(", ");
   PRINT(boot_utc.month());
   PRINT(", ");
-  PRINT(boot_utc.year()-2000);
+  PRINT(boot_utc.year() - 2000);
   PRINTLN(")");
-  onboard_rtc.setDate(boot_utc.day(), boot_utc.month(), boot_utc.year()-2000);
+  onboard_rtc.setDate(boot_utc.day(), boot_utc.month(), boot_utc.year() - 2000);
   PRINT("onboard_rtc.setTime(");
   PRINT(boot_utc.hour());
   PRINT(", ");
@@ -81,9 +81,9 @@ void ConfigureDevices() {
     minutes++;
   }
   onboard_rtc.setTime(boot_utc.hour(), minutes, seconds);
-  
+
   flash_debug.SetRTC(&onboard_rtc);
-  
+
   PRINT("Configure unused pins:");
   // Configure all unused pins as input, enabled with built-in pullup
   // WARNING: for now, these pins are configured BEFORE the e-Paper
@@ -98,8 +98,13 @@ void ConfigureDevices() {
   PRINTLN();
 
   // Switches input pins
-  for (size_t p = 0; p < 2; p++) {
+  for (size_t p = 0; p < sizeof(kSwitchesPin); p++) {
     pinMode(kSwitchesPin[p], INPUT);
+  }
+
+  // DIP Switc input pins
+  for (size_t p = 0; p < sizeof(kDipPins); p++) {
+    pinMode(kDipPins[p], INPUT_PULLDOWN);
   }
 
   // Built in LED
@@ -128,10 +133,16 @@ void ConfigureDevices() {
   // PRINTLN(index);
 }
 
-uint8_t GetSwitchesState() 
-{
+uint8_t GetSwitchesState() {
+  uint8_t state = digitalRead(kSwitchesPin[0]);
+  state |= digitalRead(kSwitchesPin[1]) << 1;
+  return state;
+}
+
+uint8_t GetDipState() {
   uint8_t state = 0;
-  state = digitalRead(kSwitchesPin[0]) << 1;
-  state |= digitalRead(kSwitchesPin[1]) & 0x01;
+  for (size_t p=0; p<sizeof(kDipPins); p++) {
+    state |= digitalRead(kDipPins[p]) << p;
+  }
   return state;
 }

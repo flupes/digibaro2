@@ -17,13 +17,17 @@
 
 constexpr uint8_t kRtcPowerPin = 6;
 
-constexpr uint8_t kSwitchesPin[2] = {2, 3};
+constexpr uint8_t kSwitchesPin[2] = {3, 2};
+
+constexpr uint8_t kDipPins[6] = {15, 16, 17, 18, 12, 11};
 
 extern void ConfigureForSleep();
 
 extern void ConfigureDevices();
 
 extern uint8_t GetSwitchesState();
+
+extern uint8_t GetDipState();
 
 // Global variables defined in devices.c
 
