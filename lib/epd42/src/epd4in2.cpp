@@ -331,7 +331,7 @@ void Epd::Sleep() {
   SendData(0xA5);
 
   delay(10);
-  //   IfSleep();
+  IfSleep();
 }
 
 const unsigned char lut_vcom0[] = {
