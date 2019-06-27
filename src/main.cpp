@@ -7,10 +7,10 @@
 #include "Fonts/ClearSans-Medium-10pt7b.h"
 #include "Fonts/ClearSans-Medium-12pt7b.h"
 #include "Fonts/ClearSans-Medium-18pt7b.h"
-#include "Fonts/ClearSans-Medium-24pt7b.h"
 
 #include "baro_sample.h"
 #include "digibaro.h"
+#include "display_samples.h"
 #include "graph_samples.h"
 #include "print_utils.h"
 #include "watchdog_timer.h"
@@ -102,7 +102,7 @@ void setup() {
   canvas->setTextColor(0);
   canvas->setTextSize(1);
   canvas->setTextWrap(false);
-  canvas->setFont(&ClearSans_Medium24pt7b);
+  canvas->setFont(&ClearSans_Medium18pt7b);
 
   canvas->fillScreen(1);
   canvas->setCursor(4, 32);
@@ -169,36 +169,90 @@ BaroSample CollectSample(DateTime &dt, DateTime &local) {
   return sample;
 }
 
-void DisplayLine(const char* buffer, int16_t spacing, int16_t x_offset = 2) {
+void DisplayLine(const char *buffer, int16_t spacing, int16_t x_offset = 2) {
   current_line += spacing;
   canvas->setCursor(x_offset, current_line);
   canvas->print(buffer);
 }
 
-void DisplayStats(DateTime &local, BaroSample &last) {
+void DisplayStats(DateTime &local, BaroSample &current) {
   char buffer[32];
 
-  canvas->setFont(&ClearSans_Medium24pt7b);
+  const size_t kPeriodHours = 3;
+  const size_t kNbSamples = 10;
+  DisplaySamples pressure_3h(kPeriodHours * 3600, kNbSamples);
+  DisplaySamples temp_3h(kPeriodHours * 3600, kNbSamples);
 
-  sprintf(buffer, "Date: %04d-%02d-%02d", local.year(), local.month(),
-          local.day());
-  canvas->setCursor(4, 40);
-  canvas->print(buffer);
+  BaroSample last =
+      rotating_samples.GetSampleAtIndex(rotating_samples.GetLastSampleIndex());
 
-  sprintf(buffer, "Time: %02d:%02d:%02d", local.hour(), local.minute(),
-          local.second());
-  canvas->setCursor(4, 90);
-  canvas->print(buffer);
+  last.PrettyPrint();
+  pressure_3h.Fill(rotating_samples, last.GetTimestamp());
+  pressure_3h.Print();
+  temp_3h.Fill(rotating_samples, last.GetTimestamp(), TEMPERATURE);
+  temp_3h.Print();
 
-  sprintf(buffer, "pressure: %d", (int)last.PressureMilliBar());
-  canvas->setCursor(4, 140);
-  canvas->print(buffer);
-  sprintf(buffer, "temperature: %d", (int)last.TemperatureDegCelcius());
-  canvas->setCursor(4, 190);
-  canvas->print(buffer);
-  sprintf(buffer, "humitidy: %d", (int)last.HumidityPercent());
-  canvas->setCursor(4, 240);
-  canvas->print(buffer);
+  canvas->setFont(&ClearSans_Medium18pt7b);
+  current_line = 0;
+
+  sprintf(buffer, "%04d-%02d-%02d %02d:%02d UTC%+d", local.year(),
+          local.month(), local.day(), local.hour(), local.minute(), timezone);
+  DisplayLine(buffer, 20, 16);
+
+  char pressure_str[8];
+  char temperature_str[8];
+  char humidity_str[8];
+  dtostrf(last.PressureMilliBar(), 5, 1, pressure_str);
+  dtostrf(last.TemperatureDegCelcius(), 4, 1, temperature_str);
+  dtostrf(last.HumidityPercent(), 4, 1, humidity_str);
+  sprintf(buffer, "%s mb | %s C | %s%%", pressure_str, temperature_str,
+          humidity_str);
+  DisplayLine(buffer, 26);
+
+  current_line += 6;
+
+  char delta_str[8];
+  // There is a bug: the first sample of the serie is invalid!
+  int16_t last_pressure = INT16_MIN;
+  int16_t hours = -kPeriodHours * ((int16_t)kNbSamples - 2);
+  for (size_t i = 1; i < kNbSamples; i++) {
+    int16_t pressure = pressure_3h.Data(i);
+    if (pressure == INT16_MIN) {
+      sprintf(pressure_str, "----");
+    } else {
+      dtostrf((float)pressure / 10.0, 5, 1, pressure_str);
+    }
+    if (last_pressure == INT16_MIN || pressure == INT16_MIN) {
+      sprintf(delta_str, "---");
+    } else {
+      float delta = (float)(pressure - last_pressure)/10.0;
+      if ( delta < 0) {
+        delta_str[0] = '-';
+        dtostrf(-delta, 3, 1, delta_str+1);
+      }
+      else {
+        delta_str[0] = '+';
+        dtostrf(delta, 3, 1, delta_str + 1);
+      }
+    }
+    int16_t temperature = temp_3h.Data(i);
+    if (temperature == INT16_MIN) {
+      sprintf(temperature_str, "---");
+    } else {
+      dtostrf(temperature / 100.0, 3, 1, temperature_str);
+    }
+    sprintf(buffer, "-%02d: %s ~ %s @ %sC", -hours, pressure_str, delta_str,
+            temperature_str);
+    DisplayLine(buffer, 24);
+    hours += kPeriodHours;
+    last_pressure = pressure;
+  }
+
+  current_line += 2;
+  dtostrf((float)pressure_3h.SerieMin() / 10.0, 5, 1, pressure_str);
+  dtostrf((float)pressure_3h.SerieMax() / 10.0, 5, 1, humidity_str);
+  sprintf(buffer, "min=%s / max=%s", pressure_str, humidity_str);
+  DisplayLine(buffer, 24);
 }
 
 void DisplayInfo(DateTime &local, BaroSample &last) {
@@ -216,7 +270,7 @@ void DisplayInfo(DateTime &local, BaroSample &last) {
           altitude);
   DisplayLine(buffer, 15);
 
-  sprintf(buffer, "Local: %04d-%02d-%02d %02d:%02d:%02d | TZ=%d", local.year(),
+  sprintf(buffer, "Local: %04d-%02d-%02d %02d:%02d:%02d | TZ=%+d", local.year(),
           local.month(), local.day(), local.hour(), local.minute(),
           local.second(), timezone);
   DisplayLine(buffer, 20);
