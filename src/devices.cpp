@@ -21,7 +21,7 @@ FlashDebug flash_debug;
 SPIFlash spi_flash(kMiniUltraProOnBoardChipSelectPin);
 
 // TODO : need to check if 19 = A5 should be pulled up (probably not!)
-uint8_t pins_to_pullup[] = {0,  1,  5,  7,  8,  9,  10, 14, 19, 22,
+uint8_t pins_to_pullup[] = {0,  1, 5, 7,  8,  9,  10, 14, 22,
                             25, 26, 34, 35, 36, 37, 38, 39, 40, 41};
 
 size_t nb_pins_to_pullup = sizeof(pins_to_pullup);
@@ -102,10 +102,13 @@ void ConfigureDevices() {
     pinMode(kSwitchesPin[p], INPUT);
   }
 
-  // DIP Switc input pins
+  // DIP Switch input pins
   for (size_t p = 0; p < sizeof(kDipPins); p++) {
     pinMode(kDipPins[p], INPUT_PULLDOWN);
   }
+
+  // A5 Battery monitoring pin
+  pinMode(kVsensePin, INPUT);
 
   // Built in LED
   pinMode(LED_BUILTIN, OUTPUT);
@@ -145,4 +148,18 @@ uint8_t GetDipState() {
     state |= digitalRead(kDipPins[p]) << p;
   }
   return state;
+}
+
+uint32_t MeasureVbat() {
+  const uint32_t kVRef_mV = 3300;
+  const uint32_t kRLow = 25;
+  const uint32_t kRhigh = 10;
+  analogReadResolution(12);
+  uint32_t Vsense = analogRead(kVsensePin);
+  DEBUG("Vsense", Vsense);
+  if (Vsense == 4095) return Vsaturated;
+  // Vsense = Vbat * Rlow / (Rhigh + Rlow)
+  uint32_t Vbat = Vsense * kVRef_mV * (kRLow + kRhigh) / kRLow;
+  // analog read on 12 bits = 4096 ticks
+  return Vbat / 4096;
 }

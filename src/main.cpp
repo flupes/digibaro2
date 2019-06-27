@@ -6,6 +6,7 @@
 #include "Adafruit_GFX.h"
 #include "Fonts/ClearSans-Medium-10pt7b.h"
 #include "Fonts/ClearSans-Medium-12pt7b.h"
+#include "Fonts/ClearSans-Medium-18pt7b.h"
 #include "Fonts/ClearSans-Medium-24pt7b.h"
 
 #include "baro_sample.h"
@@ -15,6 +16,8 @@
 #include "watchdog_timer.h"
 
 // #define KEEP_AWAKE
+
+#define STRESS_TEST
 
 // canvas to draw on
 GFXcanvas1 *canvas;
@@ -26,22 +29,27 @@ PermanentSamples permanent_samples(spi_flash);
 RotatingSamples rotating_samples(spi_flash);
 
 #ifndef STRESS_TEST
-GraphSamples daily_buffer(5 * 60);
-GraphSamples weekly_buffer(20 * 60);
+#define DAILY_PERIOD_MINUTE 5
+#define WEEKLY_PERIOD_MINUTE 20
 #else
-GraphSamples daily_buffer(1 * 60);
-GraphSamples weekly_buffer(5 * 60);
+#define DAILY_PERIOD_MINUTE 2
+#define WEEKLY_PERIOD_MINUTE 10
 #endif
 
-int8_t timezone = 0;
-int16_t altitude = 0;
-uint32_t samples_on_flash = 0;
-
-enum DisplayMode : uint8_t { WEEKLY = 0, DAILY = 1, INFO = 2, STATS = 3 };
+GraphSamples daily_buffer(DAILY_PERIOD_MINUTE * 60);
+GraphSamples weekly_buffer(WEEKLY_PERIOD_MINUTE * 60);
 
 uint32_t uptime_seconds = 0;
 uint32_t awake_centiseconds = 0;
 uint32_t loop_counter = 0;
+
+uint32_t samples_on_flash = 0;
+uint32_t vbat_mv = 0;
+int16_t current_line = 0;
+int16_t altitude = 0;
+int8_t timezone = 0;
+
+enum DisplayMode : uint8_t { STATS = 0, INFO = 1, DAILY = 2, WEEKLY = 3 };
 
 extern "C" char *sbrk(int i);
 
@@ -50,8 +58,7 @@ int FreeRam() {
   return &stack_dummy - sbrk(0);
 }
 
-void GetSettingsFromDip()
-{
+void GetSettingsFromDip() {
   uint8_t dip_switches_state = GetDipState();
   DEBUG("DIP state = ", dip_switches_state);
   uint8_t alt_code = dip_switches_state >> 4;
@@ -81,6 +88,8 @@ void setup() {
 
   ConfigureDevices();
   GetSettingsFromDip();
+
+  vbat_mv = MeasureVbat();
 
   ep42_display.ClearFrame();
   PRINT("Free RAM before Canvas allocation: ");
@@ -118,7 +127,7 @@ void setup() {
   wdt_configure(11);
 }
 
-BaroSample CollectSample(DateTime &dt) {
+BaroSample CollectSample(DateTime &dt, DateTime &local) {
   bme.PerformMeasurement();
 
   BaroSample sample(dt.unixtime(), bme.GetPressure() / 100,
@@ -127,7 +136,6 @@ BaroSample CollectSample(DateTime &dt) {
 
   if (Serial) {
     char buffer[64];
-    DateTime local = dt.getLocalTime(timezone);
     local.toString(buffer);
     Serial.print("collect_sample at time = ");
     Serial.print(buffer);
@@ -151,31 +159,20 @@ BaroSample CollectSample(DateTime &dt) {
     Serial.println();
   }
 
-#ifndef STRESS_TEST
-  if (dt.minute() % 5 == 0) {
+  if (dt.minute() % DAILY_PERIOD_MINUTE == 0) {
     rotating_samples.AddSample(sample);
   }
   if (dt.minute() == 0) {
-    permanent_samples.AddSample(sample);
-    flash_debug.Message(FlashDebug::STEP, 11, awake_centiseconds / (100 * 60));
-  }
-#else
-  uint32_t index = rotating_samples.AddSample(sample);
-  DEBUG("new rotating sample index", index);
-  if (dt.minute() % 15 == 0) {
     samples_on_flash = permanent_samples.AddSample(sample);
-
     flash_debug.Message(FlashDebug::STEP, 11, awake_centiseconds / (100 * 60));
-
-    if (Serial) {
-      Serial.print("Sample #  ");
-      Serial.print(samples_on_flash);
-      Serial.print(" written at addr = ");
-      Serial.println(permanent_samples.GetLastSampleAddr());
-    }
   }
-#endif
   return sample;
+}
+
+void DisplayLine(const char* buffer, int16_t spacing, int16_t x_offset = 2) {
+  current_line += spacing;
+  canvas->setCursor(x_offset, current_line);
+  canvas->print(buffer);
 }
 
 void DisplayStats(DateTime &local, BaroSample &last) {
@@ -211,44 +208,45 @@ void DisplayInfo(DateTime &local, BaroSample &last) {
   char humidity_str[8];
 
   canvas->setFont(&ClearSans_Medium12pt7b);
+  current_line = 0;
 
   DateTime utc = DateTime(last.GetTimestamp());
   sprintf(buffer, "UTC : %04d-%02d-%02d %02d:%02d:%02d | Alt=%dm", utc.year(),
           utc.month(), utc.day(), utc.hour(), utc.minute(), utc.second(),
           altitude);
-  canvas->setCursor(4, 15);
-  canvas->print(buffer);
+  DisplayLine(buffer, 15);
 
   sprintf(buffer, "Local: %04d-%02d-%02d %02d:%02d:%02d | TZ=%d", local.year(),
           local.month(), local.day(), local.hour(), local.minute(),
           local.second(), timezone);
-  canvas->setCursor(4, 35);
-  canvas->print(buffer);
+  DisplayLine(buffer, 20);
 
   dtostrf(last.PressureMilliBar(), 5, 1, pressure_str);
   dtostrf(last.TemperatureDegCelcius(), 4, 1, temperature_str);
   dtostrf(last.HumidityPercent(), 4, 1, humidity_str);
   sprintf(buffer, "Last: p=%s mb | t=%s C | h=%s %%", pressure_str,
           temperature_str, humidity_str);
-  canvas->setCursor(4, 55);
-  canvas->print(buffer);
+  DisplayLine(buffer, 20);
+
+  if (vbat_mv == Vsaturated) {
+    sprintf(buffer, "Vbat > 4600mV");
+  } else {
+    sprintf(buffer, "Vbat = %lu mV", vbat_mv);
+  }
+  DisplayLine(buffer, 20);
 
   sprintf(buffer, "# samples stored on flash = %lu", samples_on_flash);
-  canvas->setCursor(4, 75);
-  canvas->print(buffer);
+  DisplayLine(buffer, 20);
   uptime_seconds = utc.secondstime() - boot_utc.secondstime();
   TimeSpan up = TimeSpan(uptime_seconds);
   sprintf(buffer, "loop counter=%ld | awake=%lds", loop_counter,
           awake_centiseconds / 100);
-  canvas->setCursor(4, 95);
-  canvas->print(buffer);
+  DisplayLine(buffer, 20);
   sprintf(buffer, "uptime: %dd %dh %dm (%lus)", up.days(), up.hours(),
           up.minutes(), uptime_seconds);
-  canvas->setCursor(4, 115);
-  canvas->print(buffer);
+  DisplayLine(buffer, 20);
   sprintf(buffer, "build: %s (%s)", DIGIBARO_VERSION, __DATE__);
-  canvas->setCursor(4, 135);
-  canvas->print(buffer);
+  DisplayLine(buffer, 20);
 }
 
 void Display(DateTime &local, BaroSample &sample, uint8_t mode) {
@@ -293,7 +291,7 @@ void loop() {
 
   // Enable power to the external RTC and display
   digitalWrite(kRtcPowerPin, HIGH);
-  delay(100);
+  delay(50);
 
   DateTime utc = ds3231_rtc.now();
   if (loop_counter % 60 == 0) {
@@ -310,15 +308,11 @@ void loop() {
 
   uint8_t wake_switch_state = GetSwitchesState();
   GetSettingsFromDip();
+  vbat_mv = MeasureVbat();
 
-  BaroSample last_measurement = CollectSample(utc);
+  BaroSample last_measurement = CollectSample(utc, local);
 
-#ifdef STRESS_TEST
-  uint8_t period = 1;
-#else
-  uint8_t period = 15;
-#endif
-  if (!timer_wakeup || utc.minute() % period == 0) {
+  if (!timer_wakeup || utc.minute() % DAILY_PERIOD_MINUTE == 0) {
     // Update display only to the period in minute defined above
     // Or if awakened by external switch input
     if (ep42_display.Init() != 0) {
@@ -353,6 +347,7 @@ void loop() {
     digitalWrite(LED_BUILTIN, HIGH);
     // flash_debug.Message(FlashDebug::WAKEUP, 1, awake_centiseconds /
     // (100*60));
+
     PRINTLN("Just woke up!");
     if (serial_attached) {
       USBDevice.init();

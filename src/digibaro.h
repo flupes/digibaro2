@@ -13,13 +13,15 @@
 #include "permanent_samples.h"
 #include "rotating_samples.h"
 
-#define STRESS_TEST
-
 constexpr uint8_t kRtcPowerPin = 6;
 
-constexpr uint8_t kSwitchesPin[2] = {3, 2};
+constexpr uint8_t kSwitchesPin[2] = {2, 3};
 
-constexpr uint8_t kDipPins[6] = {15, 16, 17, 18, 12, 11};
+constexpr uint8_t kDipPins[6] = {PIN_A1, PIN_A2, PIN_A3, PIN_A4, 12, 11};
+
+constexpr uint8_t kVsensePin = PIN_A5;
+
+constexpr uint32_t Vsaturated = 10000;
 
 extern void ConfigureForSleep();
 
@@ -28,6 +30,8 @@ extern void ConfigureDevices();
 extern uint8_t GetSwitchesState();
 
 extern uint8_t GetDipState();
+
+extern uint32_t MeasureVbat();
 
 // Global variables defined in devices.c
 
