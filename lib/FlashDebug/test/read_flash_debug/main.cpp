@@ -6,7 +6,7 @@
 #include "flash_debug.h"
 
 // pio ci test\read_flash_debug -b zeroUSB -l .\src -l ..\RTCZero
-//   -l ..\RTClib -l ..\SPIMemory -O "targets=upload"
+//   -l ..\BaroUtils -l ..\RTClib -l ..\SPIMemory -O "targets=upload"
 
 #if defined(ARDUINO_SAMD_ZERO) && defined(SERIAL_PORT_USBVIRTUAL)
 #define Serial SERIAL_PORT_USBVIRTUAL
