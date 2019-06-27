@@ -1,3 +1,8 @@
+/*
+pio ci .\test\AdaGfxTest --board=zeroUSB   -l .\lib\Adafruit-GFX-Library
+-l .\lib\epd42  -O "targets=upload"
+*/
+
 // Get the board definitions...
 #include <Arduino.h>
 
@@ -120,6 +125,11 @@ void setup() {
   Serial.begin(115200);
   while (!Serial)
     ;
+
+  Serial.print("INT16_MAX = ");
+  Serial.println(INT16_MAX, HEX);
+  Serial.print("INT16_MIN = ");
+  Serial.println(INT16_MIN, HEX);
 
   Serial.println("Init e-Paper...");
 
