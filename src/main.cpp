@@ -6,6 +6,7 @@
 #include "Adafruit_GFX.h"
 #include "Fonts/ClearSans-Medium-10pt7b.h"
 #include "Fonts/ClearSans-Medium-12pt7b.h"
+#include "Fonts/ClearSans-Medium-16pt7b.h" 
 #include "Fonts/ClearSans-Medium-18pt7b.h"
 
 #include "baro_sample.h"
@@ -179,7 +180,7 @@ void DisplayStats(DateTime &local, BaroSample &current) {
   char buffer[32];
 
   const size_t kPeriodHours = 3;
-  const size_t kNbSamples = 10;
+  const size_t kNbSamples = 11;
   DisplaySamples pressure_3h(kPeriodHours * 3600, kNbSamples);
   DisplaySamples temp_3h(kPeriodHours * 3600, kNbSamples);
 
@@ -209,13 +210,16 @@ void DisplayStats(DateTime &local, BaroSample &current) {
           humidity_str);
   DisplayLine(buffer, 26);
 
+  canvas->setFont(&ClearSans_Medium16pt7b);
   current_line += 6;
 
   char delta_str[8];
   // There is a bug: the first sample of the serie is invalid!
-  int16_t last_pressure = INT16_MIN;
-  int16_t hours = -kPeriodHours * ((int16_t)kNbSamples - 2);
-  for (size_t i = 1; i < kNbSamples; i++) {
+  // So: 1) the serie should be 1 element longer and 2) we want one extra
+  // element for the first delta --> serie length = 9 + 2 !
+  int16_t last_pressure = pressure_3h.Data(1);
+  int16_t hours = -kPeriodHours * (kNbSamples - 3);
+  for (size_t i = 2; i < kNbSamples; i++) {
     int16_t pressure = pressure_3h.Data(i);
     if (pressure == INT16_MIN) {
       sprintf(pressure_str, "----");
@@ -223,7 +227,7 @@ void DisplayStats(DateTime &local, BaroSample &current) {
       dtostrf((float)pressure / 10.0, 5, 1, pressure_str);
     }
     if (last_pressure == INT16_MIN || pressure == INT16_MIN) {
-      sprintf(delta_str, "---");
+      sprintf(delta_str, "+#.#");
     } else {
       float delta = (float)(pressure - last_pressure)/10.0;
       if ( delta < 0) {
@@ -243,7 +247,7 @@ void DisplayStats(DateTime &local, BaroSample &current) {
     }
     sprintf(buffer, "-%02d: %s ~ %s @ %sC", -hours, pressure_str, delta_str,
             temperature_str);
-    DisplayLine(buffer, 24);
+    DisplayLine(buffer, 24, 16);
     hours += kPeriodHours;
     last_pressure = pressure;
   }
@@ -252,7 +256,7 @@ void DisplayStats(DateTime &local, BaroSample &current) {
   dtostrf((float)pressure_3h.SerieMin() / 10.0, 5, 1, pressure_str);
   dtostrf((float)pressure_3h.SerieMax() / 10.0, 5, 1, humidity_str);
   sprintf(buffer, "min=%s / max=%s", pressure_str, humidity_str);
-  DisplayLine(buffer, 24);
+  DisplayLine(buffer, 24, 24);
 }
 
 void DisplayInfo(DateTime &local, BaroSample &last) {
