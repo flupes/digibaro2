@@ -69,4 +69,11 @@ constexpr int8_t kTimezones_offset[] = {1, 0, -1, -4, -5, -6, -7, -8};
 
 constexpr int16_t kAltitudes_options[] = {0, 222, 445, 1620};
 
+// Some ID to facilitate error logging to flash
+#define DEVICE_SPI_FLASH_ID 1
+#define DEVICE_ONBOARD_RTC_ID 2
+#define DEVICE_RTC_DS3231_ID 3
+#define DEVICE_EPD42_ID 4
+#define DEVICe_BME280_ID 5
+
 #endif

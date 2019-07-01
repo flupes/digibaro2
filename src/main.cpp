@@ -6,7 +6,7 @@
 #include "Adafruit_GFX.h"
 #include "Fonts/ClearSans-Medium-10pt7b.h"
 #include "Fonts/ClearSans-Medium-12pt7b.h"
-#include "Fonts/ClearSans-Medium-16pt7b.h" 
+#include "Fonts/ClearSans-Medium-16pt7b.h"
 #include "Fonts/ClearSans-Medium-18pt7b.h"
 
 #include "baro_sample.h"
@@ -14,7 +14,9 @@
 #include "display_samples.h"
 #include "graph_samples.h"
 #include "print_utils.h"
+#include "vai_silouhette.h"
 #include "watchdog_timer.h"
+
 
 // #define KEEP_AWAKE
 
@@ -59,7 +61,7 @@ int FreeRam() {
   return &stack_dummy - sbrk(0);
 }
 
-void GetSettingsFromDip() {
+void ConfigureSettingsFromDip() {
   uint8_t dip_switches_state = GetDipState();
   DEBUG("DIP state = ", dip_switches_state);
   uint8_t alt_code = dip_switches_state >> 4;
@@ -72,9 +74,30 @@ void GetSettingsFromDip() {
   timezone = kTimezones_offset[tz_code] + dst_mode;
 }
 
+void SyncOnboardRTC(DateTime &utc) {
+  if (loop_counter % 60 == 0) {
+    // re-sync the onboard RTC every hour
+    onboard_rtc.setTime(utc.hour(), utc.minute(), utc.second());
+    onboard_rtc.setDate(utc.day(), utc.month(), uint8_t(utc.year() - 2000));
+  }
+}
+
+void CheckAndWaitForSerial() {
+  if (serial_attached) {
+    USBDevice.init();
+    USBDevice.attach();
+    uint8_t count = 0;
+    while (!Serial && count < 9) {
+      delay(1000);
+      count++;
+    }
+  }
+}
+
 void setup() {
   Serial.begin(115200);
 
+#ifdef SERIAL_DEBUG
   uint8_t count = 0;
   while (!Serial && count < 12) {
     delay(1000);
@@ -84,11 +107,12 @@ void setup() {
     USBDevice.detach();
     serial_attached = false;
   }
+#endif
 
   PRINTLN("Digibaro Starting...");
 
   ConfigureDevices();
-  GetSettingsFromDip();
+  ConfigureSettingsFromDip();
 
   vbat_mv = MeasureVbat();
 
@@ -100,18 +124,34 @@ void setup() {
   PRINTLN(FreeRam());
 
 #ifndef KEEP_AWAKE
+
+  canvas->fillScreen(0);
+  canvas->drawBitmap(0, 0, vai_silouhette.data, vai_silouhette.width,
+                     vai_silouhette.height, 1);
   canvas->setTextColor(0);
   canvas->setTextSize(1);
   canvas->setTextWrap(false);
   canvas->setFont(&ClearSans_Medium18pt7b);
-
-  canvas->fillScreen(1);
-  canvas->setCursor(4, 32);
-  canvas->print("Waiting 5s");
+  canvas->setCursor(190, 180);
+  canvas->print("DigiBaro");
   ep42_display.DisplayFrame(canvas->getBuffer());
 
-// crucial delay to let us chance to reflash!
-// delay(5 * 1000);
+#ifdef SERIAL_DEBUG
+  // crucial delay to let us chance to reflash!
+  delay(5 * 1000);
+#endif
+#endif
+
+#ifndef SERIAL_DEBUG
+  uint8_t count = 0;
+  while (!Serial && count < 20) {
+    delay(1000);
+    count++;
+  }
+  if (!Serial) {
+    USBDevice.detach();
+    serial_attached = false;
+  }
 #endif
 
   uint32_t last_index = rotating_samples.begin();
@@ -136,7 +176,7 @@ BaroSample CollectSample(DateTime &dt, DateTime &local) {
                     timezone);
 
   if (Serial) {
-    char buffer[64];
+    char buffer[56];
     local.toString(buffer);
     Serial.print("collect_sample at time = ");
     Serial.print(buffer);
@@ -218,7 +258,7 @@ void DisplayStats(DateTime &local, BaroSample &current) {
   // So: 1) the serie should be 1 element longer and 2) we want one extra
   // element for the first delta --> serie length = 9 + 2 !
   int16_t last_pressure = pressure_3h.Data(1);
-  int16_t hours = -kPeriodHours * (kNbSamples - 3);
+  int16_t hours = -(int16_t)kPeriodHours * ((int16_t)kNbSamples - 3);
   for (size_t i = 2; i < kNbSamples; i++) {
     int16_t pressure = pressure_3h.Data(i);
     if (pressure == INT16_MIN) {
@@ -229,12 +269,11 @@ void DisplayStats(DateTime &local, BaroSample &current) {
     if (last_pressure == INT16_MIN || pressure == INT16_MIN) {
       sprintf(delta_str, "+#.#");
     } else {
-      float delta = (float)(pressure - last_pressure)/10.0;
-      if ( delta < 0) {
+      float delta = (float)(pressure - last_pressure) / 10.0;
+      if (delta < 0) {
         delta_str[0] = '-';
-        dtostrf(-delta, 3, 1, delta_str+1);
-      }
-      else {
+        dtostrf(-delta, 3, 1, delta_str + 1);
+      } else {
         delta_str[0] = '+';
         dtostrf(delta, 3, 1, delta_str + 1);
       }
@@ -310,6 +349,13 @@ void DisplayInfo(DateTime &local, BaroSample &last) {
 void Display(DateTime &local, BaroSample &sample, uint8_t mode) {
   uint32_t count;
 
+  // Display was powered OFF: need to wake up (with reset)
+  if (ep42_display.Init() != 0) {
+    flash_debug.Message(FlashDebug::STEP, DEVICE_EPD42_ID, -1);
+    while (1)
+      ;
+  }
+
   ep42_display.ConfigAndSendOldBuffer(canvas->getBuffer());
 
   canvas->fillScreen(1);
@@ -342,61 +388,42 @@ void Display(DateTime &local, BaroSample &sample, uint8_t mode) {
 }
 
 void loop() {
-  static uint32_t after_awake = 0;
-  wdt_reset();
+  static uint32_t after_awake = millis();
+  wdt_reset();  // Tell the watchdog timer everything is fine
   loop_counter++;
-  if (!after_awake) after_awake = millis();
 
   // Enable power to the external RTC and display
   digitalWrite(kRtcPowerPin, HIGH);
   delay(50);
 
   DateTime utc = ds3231_rtc.now();
-  if (loop_counter % 60 == 0) {
-    // re-sync the onboard RTC every hour
-    onboard_rtc.setTime(utc.hour(), utc.minute(), utc.second());
-    onboard_rtc.setDate(utc.day(), utc.month(), uint8_t(utc.year() - 2000));
-  }
-
-  char buffer[64];
+  SyncOnboardRTC(utc);
   DateTime local = utc.getLocalTime(timezone);
-  local.toString(buffer);
-  PRINT("current time = ");
-  PRINTLN(buffer);
 
+  // Get display mode from rocker switches state
   uint8_t wake_switch_state = GetSwitchesState();
-  GetSettingsFromDip();
-  vbat_mv = MeasureVbat();
-
+  ConfigureSettingsFromDip();
   BaroSample last_measurement = CollectSample(utc, local);
+  vbat_mv = MeasureVbat();
 
   if (!timer_wakeup || utc.minute() % DAILY_PERIOD_MINUTE == 0) {
     // Update display only to the period in minute defined above
-    // Or if awakened by external switch input
-    if (ep42_display.Init() != 0) {
-      PRINTLN("e-Paper init failed");
-      while (1)
-        ;
-    }
-
+    // or if awakened by external switch input.
     Display(local, last_measurement, wake_switch_state);
-    // ep42_display.SetPartialWindow(canvas->getBuffer(), 0, 0, 400, 300);
-    // ep42_display.DisplayFrame();
   }
 
-  uint8_t new_switch_state = GetSwitchesState();
 #ifndef KEEP_AWAKE
+  uint8_t new_switch_state = GetSwitchesState();
   if (new_switch_state == wake_switch_state) {
     // Only go in standby mode if switches were not modified
-    // Setup for standby mode
     ConfigureForSleep();
-    // flash_debug.Message(FlashDebug::STANDBY, 1, loop_counter);
     awake_centiseconds += ((millis() - after_awake)) / 10;
 
     // Go in standby mode for 1 minute!
+    // flash_debug.Message(FlashDebug::STANDBY, 1, loop_counter);
     onboard_rtc.standbyMode();
 
-    // now we are awake again!
+    // nNw we are awake again! --> detach the interrupts
     onboard_rtc.detachInterrupt();
     for (size_t p = 0; p < 2; p++) {
       detachInterrupt(kSwitchesPin[p]);
@@ -406,16 +433,7 @@ void loop() {
     // flash_debug.Message(FlashDebug::WAKEUP, 1, awake_centiseconds /
     // (100*60));
 
-    PRINTLN("Just woke up!");
-    if (serial_attached) {
-      USBDevice.init();
-      USBDevice.attach();
-      uint8_t count = 0;
-      while (!Serial && count < 9) {
-        delay(1000);
-        count++;
-      }
-    }
+    CheckAndWaitForSerial();
   }
 #else
   delay(10 * 1000);
