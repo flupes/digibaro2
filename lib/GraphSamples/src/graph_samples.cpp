@@ -8,7 +8,7 @@
 
 #define USE_LINE
 
-bool GraphSamples::Draw(GFXcanvas1 &canvas, uint8_t bg_color, uint8_t fg_color) {
+void GraphSamples::Draw(GFXcanvas1 &canvas, uint8_t bg_color, uint8_t fg_color) {
   canvas.fillScreen(bg_color);
 
   // canvas.drawRect(graph_xstart, graph_ystart, graph_width, -graph_height,
