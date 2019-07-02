@@ -12,3 +12,12 @@ void DEBUG(const char *s, int32_t x) {
     Serial.println(x);
   }
 }
+
+void DEBUG(const char *s, const char *x) {
+  if (Serial) {
+    Serial.print(s);
+    Serial.print(" = ");
+    Serial.println(x);
+  }
+}
+

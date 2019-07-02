@@ -17,4 +17,6 @@ void DEBUG(const char *s);
 
 void DEBUG(const char *s, int32_t x);
 
+void DEBUG(const char *s, const char* x);
+
 #endif
