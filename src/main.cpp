@@ -8,6 +8,7 @@
 #include "Fonts/ClearSans-Medium-12pt7b.h"
 #include "Fonts/ClearSans-Medium-16pt7b.h"
 #include "Fonts/ClearSans-Medium-18pt7b.h"
+#include "Fonts/ClearSans-Medium-32pt7b.h"
 
 #include "baro_sample.h"
 #include "digibaro.h"
@@ -16,7 +17,6 @@
 #include "print_utils.h"
 #include "vai_silouhette.h"
 #include "watchdog_timer.h"
-
 
 // #define KEEP_AWAKE
 
@@ -132,7 +132,9 @@ void setup() {
   canvas->setTextSize(1);
   canvas->setTextWrap(false);
   canvas->setFont(&ClearSans_Medium18pt7b);
-  canvas->setCursor(190, 180);
+  canvas->setCursor(185, 115);
+  canvas->print("VAI");
+  canvas->setCursor(185, 180);
   canvas->print("DigiBaro");
   ep42_display.DisplayFrame(canvas->getBuffer());
 
@@ -346,6 +348,33 @@ void DisplayInfo(DateTime &local, BaroSample &last) {
   DisplayLine(buffer, 20);
 }
 
+void DisplayHeader(DateTime &local, BaroSample &sample) {
+  char buffer[16];
+  canvas->setFont(&ClearSans_Medium32pt7b);
+  int16_t u, l, x, y;
+  uint16_t w, h;
+
+  sprintf(buffer, "%02d:%02d", local.hour(), local.minute());
+  canvas->getTextBounds(buffer, 0, 44, &u, &l, &w, &h);
+  x=w; y=h;
+  canvas->setCursor(0, y);
+  canvas->print(buffer);
+
+  dtostrf(sample.PressureMilliBar(), 5, 1, buffer);
+  canvas->getTextBounds(buffer, 0, y, &u, &l, &w, &h);
+  canvas->setCursor(390 - w, y);
+  canvas->print(buffer);
+
+  canvas->setFont(&ClearSans_Medium12pt7b);
+  sprintf(buffer, "TZ=%+d", timezone);
+  canvas->setCursor(x + 16, 16);
+  canvas->print(buffer);
+
+  sprintf(buffer, "%dm", altitude);
+  canvas->setCursor(x + 16, y);
+  canvas->print(buffer);
+}
+
 void Display(DateTime &local, BaroSample &sample, uint8_t mode) {
   uint32_t count;
 
@@ -370,14 +399,17 @@ void Display(DateTime &local, BaroSample &sample, uint8_t mode) {
       break;
     case DisplayMode::DAILY:
       count = daily_buffer.Fill(rotating_samples, sample.GetTimestamp());
-      DEBUG("daily count", count);
       if (count > 0) {
         daily_buffer.Draw(*canvas, 1, 0);
       }
+      DisplayHeader(local, sample);
       break;
     case DisplayMode::WEEKLY:
-      weekly_buffer.Fill(rotating_samples, sample.GetTimestamp());
-      weekly_buffer.Draw(*canvas, 1, 0);
+      count = weekly_buffer.Fill(rotating_samples, sample.GetTimestamp());
+      if (count > 0) {
+        weekly_buffer.Draw(*canvas, 1, 0);
+      }
+      DisplayHeader(local, sample);
       break;
     default:
       break;
