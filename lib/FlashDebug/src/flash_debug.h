@@ -8,7 +8,16 @@ class RTCZero;
 
 class FlashDebug {
  public:
-  enum MessageType : uint8_t { NONE = 0, BOOT, STANDBY, WAKEUP, STEP, INIT };
+  enum MessageType : uint8_t {
+    NONE = 0,
+    INIT,
+    BOOT,
+    STANDBY,
+    WAKEUP,
+    ERROR,
+    WARNING,
+    STEP
+  };
 
   FlashDebug();
   uint32_t SetFlash(SPIFlash *flash);
