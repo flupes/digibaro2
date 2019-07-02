@@ -216,7 +216,7 @@ void Epd::SendNewBufferAndRefresh(const unsigned char* frame_buffer) {
  * @brief: refresh and displays the frame
  */
 void Epd::DisplayFrame(const unsigned char* frame_buffer) {
-  static bool first_buffer = false;
+  // static bool first_buffer = false;
 
   SendCommand(RESOLUTION_SETTING);
   SendData(width >> 8);
