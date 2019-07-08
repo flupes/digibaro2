@@ -21,12 +21,20 @@ class PermanentSamples {
   uint32_t GetFirstSampleAddr();
   uint32_t GetLastSampleAddr();
 
+  BaroSample min_pressure_;
+  BaroSample max_pressure_;
+  // BaroSample min_temperature_;
+  // BaroSample max_temperature_;
+  // BaroSample min_humidity_;
+  // BaroSample max_humidity_;
+
  private:
   BaroSample GetSampleAtAddr(uint32_t addr);
   uint32_t current_sample_addr_;
   uint32_t number_of_samples_;
   uint32_t max_samples_;
   SPIFlash &flash_;
+  BaroSample current_sample_;
 };
 
 #endif

@@ -5,9 +5,12 @@
 PermanentSamples::PermanentSamples(SPIFlash& flash) : flash_(flash) {
   max_samples_ =
       kPermanentSamplesSectorLength * KB(4) / kPermanentSampleBytesLength;
+  min_pressure_ = BaroSample(k2019epoch, kMaxRecordablePressure, 0, 0);
+  max_pressure_ = BaroSample(k2019epoch, 0, 0, 0);
 }
 
 uint32_t PermanentSamples::begin() {
+  uint32_t start = millis();
   uint32_t addr = kPermanentSamplesAddrStart;
   bool reached_unitialized = false;
   for (number_of_samples_ = 0; number_of_samples_ < max_samples_;
@@ -21,6 +24,17 @@ uint32_t PermanentSamples::begin() {
       PRINTLN(number_of_samples_);
       break;
     }
+    PackedBaroSample data;
+    flash_.readCharArray(addr, data, kBaroPackedSampleSize);
+    current_sample_ = BaroSample(data);
+    if (current_sample_.GetPressure() > max_pressure_.GetPressure()) {
+      max_pressure_ = current_sample_;
+    }
+    if (current_sample_.GetPressure() < min_pressure_.GetPressure()) {
+      // DEBUG("new min pressure", number_of_samples_);
+      // current_sample_.PrettyPrint();
+      min_pressure_ = current_sample_;
+    }
     addr += kPermanentSampleBytesLength;
   }
   if (!reached_unitialized) {
@@ -30,6 +44,9 @@ uint32_t PermanentSamples::begin() {
   if (number_of_samples_ == 0) {
     PRINTLN("No samples on storage yet.");
   }
+  DEBUG("PermanentSamples::begin (ms)", millis() - start);
+  // min_pressure_.PrettyPrint();
+  // max_pressure_.PrettyPrint();
   return number_of_samples_;
 }
 
@@ -46,6 +63,12 @@ uint32_t PermanentSamples::AddSample(BaroSample& sample) {
       // PRINT(number_of_samples_);
       // PRINT(" at address ");
       // PRINTLN(addr);
+      if (sample.GetPressure() > max_pressure_.GetPressure()) {
+        max_pressure_ = sample;
+      }
+      if (sample.GetPressure() < min_pressure_.GetPressure()) {
+        min_pressure_ = sample;
+      }
     } else {
       PRINT("Cannot write sample # ");
       PRINT(number_of_samples_);
@@ -61,8 +84,8 @@ uint32_t PermanentSamples::AddSample(BaroSample& sample) {
 BaroSample PermanentSamples::GetSampleAtAddr(uint32_t addr) {
   if (addr >
       kPermanentSamplesAddrStart + max_samples_ * kPermanentSampleBytesLength) {
-        PRINT("GetSampleAddr with argument out of range: ");
-        PRINTLN(addr);
+    PRINT("GetSampleAddr with argument out of range: ");
+    PRINTLN(addr);
     return BaroSample();
   }
   uint32_t word = flash_.readLong(addr);
