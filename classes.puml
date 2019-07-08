@@ -2,8 +2,6 @@
 
 skinparam componentStyle uml2
 
-!include "colors.puml"
-
 class SPIFlash
 
 class RobustFlashIndexes
@@ -21,10 +19,10 @@ class PermanentSamples
 RobustFlashIndexes o-- SPIFlash
 PermanentSamples o-- SPIFlash
 
-RotatingSamples -left- BaroSamples
+RotatingSamples -left- "0..*" BaroSamples
 RotatingSamples o-- RobustFlashIndexes
 RotatingSamples ..> SPIFlash
-PermanentSamples -up- BaroSamples
+PermanentSamples -up- "0..*" BaroSamples
 
 DisplaySamples o-- RotatingSamples
 
