@@ -359,19 +359,19 @@ void DisplayInfo(DateTime &local, BaroSample &last) {
 
   sprintf(buffer, "Min/Max recorded pressure on flash:");
   DisplayLine(buffer, 22);
-  utc = DateTime(permanent_samples.min_pressure_.GetTimestamp());
+  DateTime tlow = DateTime(permanent_samples.min_pressure_.GetTimestamp());
   dtostrf(permanent_samples.min_pressure_.PressureMilliBar(), 5, 1,
           pressure_str);
-  sprintf(buffer, "%04d-%02d-%02d %02d:%02d:%02d (UTC) -> %s mb", utc.year(),
-          utc.month(), utc.day(), utc.hour(), utc.minute(), utc.second(),
+  sprintf(buffer, "%04d-%02d-%02d %02d:%02d:%02d (UTC) -> %s mb", tlow.year(),
+          tlow.month(), tlow.day(), tlow.hour(), tlow.minute(), tlow.second(),
           pressure_str);
   DisplayLine(buffer, 22);
-  utc = DateTime(permanent_samples.max_pressure_.GetTimestamp());
+  DateTime thigh = DateTime(permanent_samples.max_pressure_.GetTimestamp());
   dtostrf(permanent_samples.max_pressure_.PressureMilliBar(), 5, 1,
           pressure_str);
-  sprintf(buffer, "%04d-%02d-%02d %02d:%02d:%02d (UTC) -> %s mb", utc.year(),
-          utc.month(), utc.day(), utc.hour(), utc.minute(), utc.second(),
-          pressure_str);
+  sprintf(buffer, "%04d-%02d-%02d %02d:%02d:%02d (UTC) -> %s mb", thigh.year(),
+          thigh.month(), thigh.day(), thigh.hour(), thigh.minute(),
+          thigh.second(), pressure_str);
   DisplayLine(buffer, 22);
 
   uptime_seconds = utc.secondstime() - boot_utc.secondstime();
