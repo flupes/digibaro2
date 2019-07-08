@@ -108,7 +108,8 @@ void ConfigureDevices() {
   }
 
   // A5 Battery monitoring pin
-  pinMode(kVsensePin, INPUT);
+  // pinMode(kVsensePin, INPUT);
+  analogReadResolution(12);
 
   // Built in LED
   pinMode(LED_BUILTIN, OUTPUT);
@@ -152,14 +153,22 @@ uint8_t GetDipState() {
 
 uint32_t MeasureVbat() {
   const uint32_t kVRef_mV = 3300;
+  // const uint32_t kRLow = 100;
+  // const uint32_t kRhigh = 50;
   const uint32_t kRLow = 25;
   const uint32_t kRhigh = 10;
-  analogReadResolution(12);
-  uint32_t Vsense = analogRead(kVsensePin);
+  uint32_t Vsense = analogRead(PIN_A5);
+  Vsense = 0;
+  for (size_t r=10; r>0; r--) {
+    Vsense += analogRead(PIN_A5);
+  }
+  Vsense = Vsense / 10;
   DEBUG("Vsense", Vsense);
   if (Vsense == 4095) return Vsaturated;
-  // Vsense = Vbat * Rlow / (Rhigh + Rlow)
+  // if (Vsense == 1023) return Vsaturated;
+  // Relation between Vsense and Vbat: Vsense = Vbat * Rlow / (Rhigh + Rlow)
   uint32_t Vbat = Vsense * kVRef_mV * (kRLow + kRhigh) / kRLow;
   // analog read on 12 bits = 4096 ticks
   return Vbat / 4096;
+  // return Vbat / 1024;
 }
