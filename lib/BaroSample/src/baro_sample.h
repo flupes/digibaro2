@@ -51,6 +51,7 @@
 const uint8_t kBaroPackedSampleSize = 8;
 const uint8_t kBaroObjectSampleSize = 16;
 const uint32_t kPressureOffsetPa = 60000;
+const uint32_t kMaxRecordablePressure = 125500;
 const uint32_t kSecondsResolution =
     60;  // Resolution of the compacted timestamps
 const uint32_t kPermanentPeriodSeconds =

@@ -106,7 +106,7 @@ bool BaroSample::SetTimeStamp(uint32_t seconds) {
 }
 
 bool BaroSample::SetPressure(uint32_t pressure) {
-  if (pressure > 125500) {
+  if (pressure > kMaxRecordablePressure) {
     pressure_pa_off_ = UINT16_MAX;
     return false;
   }
