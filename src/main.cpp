@@ -4,7 +4,6 @@
 #include <avr/dtostrf.h>
 
 #include "Adafruit_GFX.h"
-#include "Fonts/ClearSans-Medium-10pt7b.h"
 #include "Fonts/ClearSans-Medium-12pt7b.h"
 #include "Fonts/ClearSans-Medium-16pt7b.h"
 #include "Fonts/ClearSans-Medium-18pt7b.h"
@@ -20,7 +19,7 @@
 
 // #define KEEP_AWAKE
 
-#define STRESS_TEST
+// #define STRESS_TEST
 
 // canvas to draw on
 GFXcanvas1 *canvas;
@@ -113,6 +112,7 @@ void setup() {
 
   ConfigureDevices();
   ConfigureSettingsFromDip();
+  flash_debug.Message(FlashDebug::INIT, 0, 0);
 
   vbat_mv = MeasureVbat();
 
@@ -165,6 +165,10 @@ void setup() {
   samples_on_flash = permanent_samples.begin();
   PRINT("Permanent sample retuned # = ");
   PRINTLN(samples_on_flash);
+
+  // Initialized the buffers
+  daily_buffer.Fill(rotating_samples, boot_utc.unixtime());
+  weekly_buffer.Fill(rotating_samples, boot_utc.unixtime());
 
   // Configure the watchdog to 130s (two full cycles)
   wdt_configure(11);
@@ -305,6 +309,7 @@ void DisplayInfo(DateTime &local, BaroSample &last) {
   char pressure_str[8];
   char temperature_str[8];
   char humidity_str[8];
+  char other_str[8];
 
   canvas->setFont(&ClearSans_Medium12pt7b);
   current_line = 0;
@@ -318,34 +323,67 @@ void DisplayInfo(DateTime &local, BaroSample &last) {
   sprintf(buffer, "Local: %04d-%02d-%02d %02d:%02d:%02d | TZ=%+d", local.year(),
           local.month(), local.day(), local.hour(), local.minute(),
           local.second(), timezone);
-  DisplayLine(buffer, 20);
+  DisplayLine(buffer, 22);
 
   dtostrf(last.PressureMilliBar(), 5, 1, pressure_str);
   dtostrf(last.TemperatureDegCelcius(), 4, 1, temperature_str);
   dtostrf(last.HumidityPercent(), 4, 1, humidity_str);
   sprintf(buffer, "Last: p=%s mb | t=%s C | h=%s %%", pressure_str,
           temperature_str, humidity_str);
-  DisplayLine(buffer, 20);
+  DisplayLine(buffer, 22);
 
+  dtostrf((float)daily_buffer.SerieMin() / 10.0, 5, 1, pressure_str);
+  dtostrf((float)weekly_buffer.SerieMin() / 10.0, 5, 1, other_str);
+  sprintf(buffer, "Min p: 28h=%smb / 4.7d=%smb", pressure_str,
+          other_str);
+  DisplayLine(buffer, 26);
+
+  dtostrf((float)daily_buffer.SerieMax() / 10.0, 5, 1, pressure_str);
+  dtostrf((float)weekly_buffer.SerieMax() / 10.0, 5, 1, other_str);
+  sprintf(buffer, "Max p: 28h=%smb / 4.7d=%smb", pressure_str, other_str);
+  DisplayLine(buffer, 22);
+
+#ifdef VMEASURE_WORKS
   if (vbat_mv == Vsaturated) {
     sprintf(buffer, "Vbat > 4600mV");
   } else {
     sprintf(buffer, "Vbat = %lu mV", vbat_mv);
   }
-  DisplayLine(buffer, 20);
+#else
+  sprintf(buffer, "Vbat = N/A");
+#endif
+  DisplayLine(buffer, 26);
 
   sprintf(buffer, "# samples stored on flash = %lu", samples_on_flash);
-  DisplayLine(buffer, 20);
+  DisplayLine(buffer, 26);
+
+  sprintf(buffer, "Min/Max recorded pressure on flash:");
+  DisplayLine(buffer, 22);
+  utc = DateTime(permanent_samples.min_pressure_.GetTimestamp());
+  dtostrf(permanent_samples.min_pressure_.PressureMilliBar(), 5, 1,
+          pressure_str);
+  sprintf(buffer, "%04d-%02d-%02d %02d:%02d:%02d (UTC) -> %s mb", utc.year(),
+          utc.month(), utc.day(), utc.hour(), utc.minute(), utc.second(),
+          pressure_str);
+  DisplayLine(buffer, 22);
+  utc = DateTime(permanent_samples.max_pressure_.GetTimestamp());
+  dtostrf(permanent_samples.max_pressure_.PressureMilliBar(), 5, 1,
+          pressure_str);
+  sprintf(buffer, "%04d-%02d-%02d %02d:%02d:%02d (UTC) -> %s mb", utc.year(),
+          utc.month(), utc.day(), utc.hour(), utc.minute(), utc.second(),
+          pressure_str);
+  DisplayLine(buffer, 22);
+
   uptime_seconds = utc.secondstime() - boot_utc.secondstime();
   TimeSpan up = TimeSpan(uptime_seconds);
   sprintf(buffer, "loop counter=%ld | awake=%lds", loop_counter,
           awake_centiseconds / 100);
-  DisplayLine(buffer, 20);
+  DisplayLine(buffer, 22);
   sprintf(buffer, "uptime: %dd %dh %dm (%lus)", up.days(), up.hours(),
           up.minutes(), uptime_seconds);
-  DisplayLine(buffer, 20);
+  DisplayLine(buffer, 22);
   sprintf(buffer, "build: %s (%s)", DIGIBARO_VERSION, __DATE__);
-  DisplayLine(buffer, 20);
+  DisplayLine(buffer, 22);
 }
 
 void DisplayHeader(DateTime &local, BaroSample &sample) {
@@ -356,7 +394,8 @@ void DisplayHeader(DateTime &local, BaroSample &sample) {
 
   sprintf(buffer, "%02d:%02d", local.hour(), local.minute());
   canvas->getTextBounds(buffer, 0, 44, &u, &l, &w, &h);
-  x=w; y=h;
+  x = w;
+  y = h;
   canvas->setCursor(0, y);
   canvas->print(buffer);
 
