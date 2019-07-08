@@ -22,5 +22,5 @@ New-Item -Path Alias:python3 -Value C:\ProgramData\Anaconda3\python.exe
 
 
 sloc count:
-cloc --exclude-dir="lib/BME280_driver,lib/epd42,lib/SPIMemory,lib/FastCRC,lib/RTClib,lib/RTCZero" \
-  --exclude-list-file=excluded.lst --force-lang="C++",c --exclude-ext=csv src test lib
+cloc --list-file=src-includes.lst --exclude-list-file=excluded.lst \
+    --force-lang="C++",c --exclude-ext=csv
