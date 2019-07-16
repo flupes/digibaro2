@@ -8,7 +8,7 @@ class GFXcanvas1;
 constexpr int16_t screen_width = 400;
 constexpr int16_t screen_height = 300;
 constexpr int16_t graph_width = 340;
-constexpr int16_t graph_height = 228;
+constexpr int16_t graph_height = 224;
 constexpr int16_t graph_xstart = 2;
 constexpr int16_t graph_ystart = 280;
 
