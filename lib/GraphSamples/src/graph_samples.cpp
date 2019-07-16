@@ -8,6 +8,14 @@
 
 #define USE_LINE
 
+//#define FIXED_SCALE 1
+
+#define OUTLIER_MIN 8800
+#define OUTLIER_MAX 11000
+#define PAPER_MIN 9800
+#define PAPER_MAX 10400
+#define PAPER_INCR 100
+
 void GraphSamples::Draw(GFXcanvas1 &canvas, uint8_t bg_color, uint8_t fg_color) {
   canvas.fillScreen(bg_color);
 
@@ -23,13 +31,26 @@ void GraphSamples::Draw(GFXcanvas1 &canvas, uint8_t bg_color, uint8_t fg_color) 
   uint32_t min = min_;
   uint32_t max = max_;
 
+#ifdef FIXED_SCALE
   // WARNING: this will only work for PRESSURE (that are multiplied by 10)
   if (max_ - min_  < 40 ) {
     min -= 20;
     max += 20;
   }
-
   loose_label(min, max, 5, lbl);
+#else
+  if (min >= PAPER_MIN || min < OUTLIER_MIN) {
+    min = PAPER_MIN;
+  }
+  if (max <= PAPER_MAX || max > OUTLIER_MAX) {
+    max = PAPER_MAX;
+  }
+  lbl.increment = PAPER_INCR;
+  lbl.min_label = PAPER_MIN;
+  lbl.max_label = PAPER_MAX;
+  lbl.nb_marks = (PAPER_MAX-PAPER_MIN)/PAPER_INCR + 1;
+#endif
+
   // DEBUG("serie_min", min_);
   // DEBUG("serie_max", max_);
   // DEBUG("set min", min);
