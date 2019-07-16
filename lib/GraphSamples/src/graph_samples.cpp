@@ -12,9 +12,9 @@
 
 #define OUTLIER_MIN 8800
 #define OUTLIER_MAX 11000
-#define PAPER_MIN 9800
-#define PAPER_MAX 10400
-#define PAPER_INCR 100
+#define PAPER_MIN 9900
+#define PAPER_MAX 10300
+#define PAPER_INCR 50
 
 void GraphSamples::Draw(GFXcanvas1 &canvas, uint8_t bg_color, uint8_t fg_color) {
   canvas.fillScreen(bg_color);
