@@ -8,7 +8,7 @@
 
 #define USE_LINE
 
-//#define FIXED_SCALE 1
+#define FIXED_SCALE 1
 
 #define OUTLIER_MIN 8800
 #define OUTLIER_MAX 11000
@@ -31,7 +31,7 @@ void GraphSamples::Draw(GFXcanvas1 &canvas, uint8_t bg_color, uint8_t fg_color) 
   uint32_t min = min_;
   uint32_t max = max_;
 
-#ifdef FIXED_SCALE
+#ifndef FIXED_SCALE
   // WARNING: this will only work for PRESSURE (that are multiplied by 10)
   if (max_ - min_  < 40 ) {
     min -= 20;
