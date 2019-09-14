@@ -4,7 +4,7 @@ Status:
 - all supporting custom libraries are now written and include tests
 - main application functional
 - schematic for board produced (one hole need fix)
-- 3D enclosure concept with wooden plate done
+- 3D [enclosure design with wooden plate](https://a360.co/2I1p0DZ) completed
 
 <img src="https://github.com/flupes/digibaro2/blob/master/digibaro.jpg" alt="Digibaro2 Photo" width="75%"/>
 
