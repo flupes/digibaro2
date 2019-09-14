@@ -1,12 +1,20 @@
-# digibaro2
-
-Digital Barometer v2 (with e-Paper display).
+# Digital Barograph v2 (with e-Paper display).
 
 Status:
 - all supporting custom libraries are now written and include tests
-- main application starting to take shape
-- schematic ready with preliminary board design
-- 3D enclosure concept (wood enclosure for next iteration)
+- main application functional
+- schematic for board produced (one hole need fix)
+- 3D enclosure concept with wooden plate done
+
+<img src="https://github.com/flupes/digibaro2/blob/master/digibaro.jpg" alt="Digibaro2 Photo" width="75%"/>
+
+*Picture of the final barograph*
+
+There is also a [complete user manual](./brochure/brochure.pdf) with a lot of cool
+build pictures.
+(The brochure has been written in French because I offered a Digibaro to
+my father for his 80th birthday, but it should not prevent you to have a look
+at it!)
 
 ## Goal
 
