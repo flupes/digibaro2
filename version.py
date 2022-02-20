@@ -1,11 +1,10 @@
 Import("env")
 import subprocess
 
-git_hash=subprocess.check_output(['git', 'rev-parse', '--short=8', 'HEAD'])
+git_hash=subprocess.check_output(['git', 'rev-parse', '--short=8', 'HEAD']).decode()
 git_hash=git_hash.replace('\n','')
 
-repo_clean=subprocess.check_output(['git', 'status', '-s', '-uno'])
-
+repo_clean=subprocess.check_output(['git', 'status', '-s', '-uno']).decode()
 
 if repo_clean.count('\n') > 0:
   git_hash=git_hash+'+'
