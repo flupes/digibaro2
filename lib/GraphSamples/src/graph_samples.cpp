@@ -28,8 +28,10 @@ void GraphSamples::Draw(GFXcanvas1 &canvas, uint8_t bg_color, uint8_t fg_color) 
   canvas.drawFastVLine(graph_xstart, graph_ystart, -graph_height, fg_color);
 
   label_spec lbl;
-  uint32_t min = min_;
-  uint32_t max = max_;
+  div_t qmin = div(min_, PAPER_INCR);
+  uint32_t min = PAPER_INCR*qmin.quot;
+  div_t qmax = div(max_+PAPER_INCR, PAPER_INCR);
+  uint32_t max = PAPER_INCR*qmax.quot;
 
 #ifndef FIXED_SCALE
   // WARNING: this will only work for PRESSURE (that are multiplied by 10)
@@ -46,9 +48,9 @@ void GraphSamples::Draw(GFXcanvas1 &canvas, uint8_t bg_color, uint8_t fg_color) 
     max = PAPER_MAX;
   }
   lbl.increment = PAPER_INCR;
-  lbl.min_label = PAPER_MIN;
-  lbl.max_label = PAPER_MAX;
-  lbl.nb_marks = (PAPER_MAX-PAPER_MIN)/PAPER_INCR + 1;
+  lbl.min_label = min;
+  lbl.max_label = max;
+  lbl.nb_marks = (max-min)/PAPER_INCR + 1;
 #endif
 
   // DEBUG("serie_min", min_);
