@@ -53,6 +53,8 @@ int8_t timezone = 0;
 
 enum DisplayMode : uint8_t { STATS = 0, INFO = 1, DAILY = 2, WEEKLY = 3 };
 
+uint8_t display_rotation = 0;
+
 extern "C" char *sbrk(int i);
 
 int FreeRam() {
@@ -122,6 +124,12 @@ void setup() {
   canvas = new GFXcanvas1(400, 300);
   PRINT("Free RAM after Canvas allocation: ");
   PRINTLN(FreeRam());
+  uint8_t switch_state = GetSwitchesState();
+  if (switch_state == 1) {
+    // two switches pointing inside
+    display_rotation = 2;
+  }
+  canvas->setRotation(display_rotation);
 
 #ifndef KEEP_AWAKE
 
@@ -494,7 +502,7 @@ void loop() {
     // flash_debug.Message(FlashDebug::STANDBY, 1, loop_counter);
     onboard_rtc.standbyMode();
 
-    // nNw we are awake again! --> detach the interrupts
+    // now we are awake again! --> detach the interrupts
     onboard_rtc.detachInterrupt();
     for (size_t p = 0; p < 2; p++) {
       detachInterrupt(kSwitchesPin[p]);
