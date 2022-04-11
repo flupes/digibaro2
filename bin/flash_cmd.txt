@@ -1,0 +1,1 @@
+bossac --info --debug --port "ttyUSB0" --write --verify --reset --erase -U true ./firmware_8d0f05f7.bin

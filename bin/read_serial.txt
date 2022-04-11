@@ -1,0 +1,4 @@
+itdad@corsair:~/source/digibaro2/bin$ miniterm /dev/ttyACM0 9600
+--- Miniterm on /dev/ttyACM0  9600,8,N,1 ---
+--- Quit: Ctrl+] | Menu: Ctrl+T | Help: Ctrl+T followed by Ctrl+H ---
+ReadFlashSamples Starting...
