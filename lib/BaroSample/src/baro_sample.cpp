@@ -1,4 +1,5 @@
 #include "baro_sample.h"
+
 #include "print_utils.h"
 
 bool BaroSample::operator==(BaroSample &s) {
@@ -114,6 +115,10 @@ bool BaroSample::SetPressure(uint32_t pressure) {
   return true;
 }
 
+bool BaroSample::SetPressureMilliBar(float pressure) {
+  return SetPressure((uint32_t)(pressure * 100.0));
+}
+
 bool BaroSample::SetTemperature(int32_t temperature) {
   bool overflow = false;
   if (temperature < -8192) {
@@ -128,6 +133,10 @@ bool BaroSample::SetTemperature(int32_t temperature) {
   return !overflow;
 }
 
+bool BaroSample::SetTemeratureDegCelcius(float temperature) {
+  return SetTemperature((int32_t)(temperature * 100.0));
+}
+
 bool BaroSample::SetHumidity(uint32_t humidity) {
   if (humidity > 10200) {
     humidity_deci_percent_ = 0x3FF;
@@ -137,16 +146,30 @@ bool BaroSample::SetHumidity(uint32_t humidity) {
   return true;
 }
 
-uint32_t BaroSample::SeaLevelPressure(uint32_t station_pressure,
-                                      int16_t elevation, int16_t temperature) {
-  // See https://keisan.casio.com/exec/system/1224575267 for equation
-  float correction =
-      (1.0 -
-       0.0065 * (float)elevation /
-           ((float)temperature/100.0 + 0.0065 * (float)elevation + 273.15));
-  float factor = powf(correction, -5.257);
-  return (uint32_t)((float)station_pressure*factor);
+bool BaroSample::SetHumidityPercent(float humidity) {
+  return SetHumidity((uint32_t)(humidity * 100.0));
 }
+
+uint32_t BaroSample::SeaLevelPressure(uint32_t station_pressure, int16_t elevation,
+                                      int16_t temperature) {
+  // See https://keisan.casio.com/exec/system/1224575267 for equation
+  float correction = (1.0 - 0.0065 * (float)elevation /
+                                ((float)temperature / 100.0 + 0.0065 * (float)elevation + 273.15));
+  float factor = powf(correction, -5.257);
+  return (uint32_t)((float)station_pressure * factor);
+}
+
+float BaroSample::PressureMilliBar() {
+  return (float)((uint32_t)(pressure_pa_off_) + kPressureOffsetPa) / 100.0;
+}
+
+int32_t BaroSample::GetTemperature() { return (int32_t)(temperature_centi_deg_); }
+
+uint32_t BaroSample::GetHumidity() { return (uint32_t)(humidity_deci_percent_)*10; }
+
+float BaroSample::TemperatureDegCelcius() { return (float)(temperature_centi_deg_) / 100.0; }
+
+float BaroSample::HumidityPercent() { return (float)(humidity_deci_percent_) / 10.0; }
 
 void BaroSample::Print() {
   if (Serial) {

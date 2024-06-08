@@ -159,25 +159,19 @@ class BaroSample {
    * Set the pressure
    * @param pressure    compensated pressure in millibars
   */
-  bool SetPressureMilliBar(float pressure) {
-    return SetPressure((uint32_t)(pressure * 100.0));
-  }
+  bool SetPressureMilliBar(float pressure);
 
   /**
    * Set the temperature
    * @param temperature   temperature in degrees celcius
    */
-  bool SetTemeratureDegCelcius(float temperature) {
-    return SetTemperature((int32_t)(temperature * 100.0));
-  }
+  bool SetTemeratureDegCelcius(float temperature);
 
   /**
    * Set the humidity
    * @param humidity      relative humidity as a percentage (0..1)
    */
-  bool SetHumidityPercent(float humidity) {
-    return SetHumidity((uint32_t)(humidity * 100.0));
-  }
+  bool SetHumidityPercent(float humidity);
 
   /** Returns the pressure in Pa. */
   uint32_t GetPressure() {
@@ -185,20 +179,16 @@ class BaroSample {
   }
 
   /** Returns the temperature in hundreds of degree celcius. */
-  int32_t GetTemperature() { return (int32_t)(temperature_centi_deg_); }
+  int32_t GetTemperature();
 
   /** Return the humidity in hundreds of percent. */
-  uint32_t GetHumidity() { return (uint32_t)(humidity_deci_percent_)*10; }
+  uint32_t GetHumidity();
 
-  float PressureMilliBar() {
-    return (float)((uint32_t)(pressure_pa_off_) + kPressureOffsetPa) / 100.0;
-  }
+  float PressureMilliBar();
 
-  float TemperatureDegCelcius() {
-    return (float)(temperature_centi_deg_) / 100.0;
-  }
+  float TemperatureDegCelcius();
 
-  float HumidityPercent() { return (float)(humidity_deci_percent_) / 10.0; }
+  float HumidityPercent();
 
   void Print();
   void PrettyPrint();
