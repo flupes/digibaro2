@@ -53,7 +53,7 @@ int8_t timezone = 0;
 
 enum DisplayMode : uint8_t { STATS = 0, INFO = 1, DAILY = 2, WEEKLY = 3 };
 
-uint8_t display_rotation = 0;
+uint8_t display_rotation = 2;
 
 extern "C" char *sbrk(int i);
 
@@ -127,7 +127,7 @@ void setup() {
   uint8_t switch_state = GetSwitchesState();
   if (switch_state == 1) {
     // two switches pointing inside
-    display_rotation = 2;
+    display_rotation = 0;
   }
   canvas->setRotation(display_rotation);
 
